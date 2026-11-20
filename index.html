@@ -1279,6 +1279,7 @@
                 customFields: [
                     { id: 'cf-wait', target: 'visits', label: '待ち時間（分）', type: 'number', defaultValue: '' }
                 ],
+                jsPatches: [],
                 invites: [
                     { token: 'INV-RAMEN-2026', purpose: 'write', label: 'ゲスト書き込み招待リンク', active: true, allowedDbIds: ['db-shared-demo'], createdAt: daysAgo(1) }
                 ],
@@ -1539,6 +1540,7 @@
                 users: Array.isArray(data.users) ? data.users : [],
                 classifications: Object.assign(base.classifications, data.classifications || {}),
                 customFields: Array.isArray(data.customFields) ? data.customFields : base.customFields,
+                jsPatches: Array.isArray(data.jsPatches) ? data.jsPatches : [],
                 invites: Array.isArray(data.invites) ? data.invites : base.invites,
                 databases: Array.isArray(data.databases) ? data.databases : base.databases
             };
@@ -2279,6 +2281,7 @@
                             <div class="flex items-center gap-1.5">
                                 <button type="button" data-copy-invite="${esc(shareUrl)}" class="px-2 py-0.5 bg-white hover:bg-stone-100 border rounded font-bold">URLコピー</button>
                                 <button type="button" data-toggle-invite="${esc(inv.token)}" class="px-2 py-0.5 bg-stone-200 hover:bg-stone-300 rounded font-bold">${inv.active ? '無効化' : '有効化'}</button>
+                                <button type="button" data-delete-invite="${esc(inv.token)}" class="px-2 py-0.5 bg-red-50 hover:bg-red-100 text-ramen-red border border-red-200 rounded font-bold"><i class="fa-solid fa-trash-can mr-0.5"></i>消去</button>
                             </div>
                         </div>
                         <p class="text-[11px] text-stone-500 truncate">${esc(inv.label)} (${inv.active ? '有効' : '停止中'})</p>
@@ -2303,6 +2306,7 @@
                     </div>
                 `).join('');
             }
+            renderInstalledJsPatchesList();
         }
 
         function populateDbSelects() {
@@ -2344,6 +2348,7 @@
                 document.getElementById('dbSubNav').classList.add('hidden');
                 document.getElementById('headerTitleText').textContent = 'My Ramen DB 88';
                 renderLobby();
+                applyAllSavedJsPatches();
                 return;
             }
 
@@ -2413,6 +2418,7 @@
             else if (viewState.dbTab === 'shops') renderDbShops(db);
             else if (viewState.dbTab === 'host') renderHostView(db);
             else if (viewState.dbTab === 'patch') renderPatchView(db);
+            applyAllSavedJsPatches();
         }
 
         function renderCustomFieldInputs(target, containerId, valuesObj) {
@@ -2814,6 +2820,76 @@
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+        }
+
+        const appliedRuntimeJsPatchIds = new Set();
+
+        function createPatchContext(patchMeta = {}) {
+            return {
+                sys,
+                db: getActiveDb(),
+                viewState,
+                patchMeta,
+                toast,
+                saveSystem,
+                render,
+                esc,
+                clone,
+                daysAgo
+            };
+        }
+
+        function executeJsPatchCode(code, patchMeta = {}) {
+            const trimmed = String(code || '').trim();
+            if (!trimmed) {
+                throw new Error('実行するJavaScriptコードが空です');
+            }
+            const ctx = createPatchContext(patchMeta);
+            const runner = new Function('ctx', `"use strict";\n${trimmed}`);
+            return runner(ctx);
+        }
+
+        function applyAllSavedJsPatches() {
+            const list = Array.isArray(sys.jsPatches) ? sys.jsPatches : [];
+            list.forEach((p) => {
+                if (!p || p.enabled === false || !p.code) return;
+                const execKey = `${p.id || p.title || ''}::${p.code.length}`;
+                if (appliedRuntimeJsPatchIds.has(execKey)) return;
+                try {
+                    executeJsPatchCode(p.code, p);
+                    appliedRuntimeJsPatchIds.add(execKey);
+                } catch (err) {
+                    console.error(`JSパッチ自動適用エラー (${p.title || p.id}):`, err);
+                }
+            });
+        }
+
+        function renderInstalledJsPatchesList() {
+            const box = document.getElementById('installedJsPatchesList');
+            if (!box) return;
+            const list = Array.isArray(sys.jsPatches) ? sys.jsPatches : [];
+            if (list.length === 0) {
+                box.innerHTML = `<p class="text-stone-400">クラウド保存されたJSパッチはありません。</p>`;
+                return;
+            }
+            box.innerHTML = list.map((p) => `
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-stone-50 px-3.5 py-2.5 rounded-xl border border-stone-200">
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="font-mono font-bold text-emerald-700">${esc(p.id || 'js-patch')}</span>
+                            <strong class="text-ramen-black">${esc(p.title || '名称未設定パッチ')}</strong>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${p.enabled !== false ? 'bg-emerald-100 text-emerald-900' : 'bg-stone-200 text-stone-600'}">${p.enabled !== false ? '自動適用ON' : '停止中'}</span>
+                        </div>
+                        <p class="text-[11px] text-stone-400 mt-0.5">登録: ${esc(p.updatedAt || p.appliedAt || '-')}</p>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0 flex-wrap">
+                        <button type="button" data-run-saved-js-patch="${esc(p.id)}" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold">今すぐ実行</button>
+                        <button type="button" data-load-saved-js-patch="${esc(p.id)}" class="px-2.5 py-1 bg-white hover:bg-stone-100 border rounded-lg font-bold">編集読込</button>
+                        <button type="button" data-toggle-saved-js-patch="${esc(p.id)}" class="px-2.5 py-1 bg-stone-200 hover:bg-stone-300 rounded-lg font-bold">${p.enabled !== false ? '停止' : '有効'}</button>
+                        <button type="button" data-del-saved-js-patch="${esc(p.id)}" class="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-ramen-red border border-red-200 rounded-lg font-bold">削除</button>
+                    </div>
+                </div>
+            `).join('');
         }
 
         async function runPatchOnActiveDb(patchObj) {
@@ -3645,6 +3721,23 @@
                 if (tg) {
                     const inv = sys.invites.find((x) => x.token === tg.dataset.toggleInvite);
                     if (inv) { inv.active = !inv.active; await saveSystem(); render(); }
+                    return;
+                }
+                const del = e.target.closest('[data-delete-invite]');
+                if (del) {
+                    const tok = del.dataset.deleteInvite;
+                    const inv = (sys.invites || []).find((x) => x.token === tok);
+                    if (!inv) return;
+                    askConfirm('招待トークンの消去', `招待トークン「${inv.token}」を完全に消去しますか？`, async () => {
+                        sys.invites = (sys.invites || []).filter((x) => x.token !== tok);
+                        if (redeemedInviteToken && redeemedInviteToken.toLowerCase() === tok.toLowerCase()) {
+                            redeemedInviteToken = '';
+                            localStorage.removeItem(INVITE_SESSION_KEY);
+                        }
+                        await saveSystem();
+                        render();
+                        toast(`トークン ${tok} を消去しました`);
+                    });
                 }
             });
 
@@ -3750,6 +3843,165 @@
                 }
             });
 
+            document.getElementById('loadJsPatchFileInput').addEventListener('change', (e) => {
+                const f = e.target.files && e.target.files[0];
+                if (!f) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const raw = String(ev.target.result || '');
+                    try {
+                        const maybeJson = JSON.parse(raw);
+                        if (maybeJson && typeof maybeJson === 'object' && typeof maybeJson.code === 'string') {
+                            document.getElementById('jsPatchIdInput').value = maybeJson.patchId || maybeJson.id || '';
+                            document.getElementById('jsPatchTitleInput').value = maybeJson.title || '';
+                            document.getElementById('customJsPatchCodeInput').value = maybeJson.code;
+                            toast('JSパッチJSONを読み込みました');
+                            e.target.value = '';
+                            return;
+                        }
+                    } catch (_) {}
+                    if (!document.getElementById('jsPatchTitleInput').value.trim()) {
+                        document.getElementById('jsPatchTitleInput').value = f.name.replace(/\.(js|json|txt)$/i, '');
+                    }
+                    document.getElementById('customJsPatchCodeInput').value = raw;
+                    toast('JSパッチファイルを読み込みました');
+                    e.target.value = '';
+                };
+                reader.readAsText(f);
+            });
+
+            document.getElementById('downloadJsPatchBtn').addEventListener('click', () => {
+                if (!isHost()) {
+                    toast('JSパッチのダウンロードはホストのみ実行できます', true);
+                    return;
+                }
+                const code = document.getElementById('customJsPatchCodeInput').value;
+                if (!code.trim()) {
+                    toast('ダウンロードするJSコードを入力してください', true);
+                    return;
+                }
+                const patchId = document.getElementById('jsPatchIdInput').value.trim() || `js-patch-${daysAgo(0)}`;
+                const title = document.getElementById('jsPatchTitleInput').value.trim() || patchId;
+                downloadJsonFile({
+                    type: 'ramen-js-patch',
+                    patchId,
+                    title,
+                    exportedAt: new Date().toISOString(),
+                    code
+                }, `${patchId}.json`);
+                toast('JSパッチファイルをダウンロードしました');
+            });
+
+            document.getElementById('applyJsPatchBtn').addEventListener('click', async () => {
+                if (!isHost()) {
+                    toast('JS機能パッチの適用はホストのみ実行できます', true);
+                    return;
+                }
+                const code = document.getElementById('customJsPatchCodeInput').value;
+                const patchId = document.getElementById('jsPatchIdInput').value.trim() || `js-patch-${Date.now()}`;
+                const title = document.getElementById('jsPatchTitleInput').value.trim() || patchId;
+                const persist = document.getElementById('jsPatchPersistCheckbox').checked;
+
+                const db = getActiveDb();
+                if (db) {
+                    db.lastSnapshot = {
+                        savedAt: new Date().toLocaleString('ja-JP'),
+                        schemaVersion: db.schemaVersion,
+                        shops: clone(db.shops || []),
+                        visits: clone(db.visits || [])
+                    };
+                }
+
+                try {
+                    await executeJsPatchCode(code, { patchId, title });
+                    appliedRuntimeJsPatchIds.add(`${patchId}::${code.trim().length}`);
+
+                    if (persist) {
+                        sys.jsPatches = Array.isArray(sys.jsPatches) ? sys.jsPatches : [];
+                        const existingIdx = sys.jsPatches.findIndex((p) => p.id === patchId);
+                        const record = {
+                            id: patchId,
+                            title,
+                            code,
+                            enabled: true,
+                            updatedAt: new Date().toLocaleString('ja-JP')
+                        };
+                        if (existingIdx !== -1) sys.jsPatches[existingIdx] = record;
+                        else sys.jsPatches.push(record);
+                    }
+
+                    if (db) {
+                        db.patchHistory = db.patchHistory || [];
+                        db.patchHistory.push({
+                            patchId,
+                            title: `[JS] ${title}`,
+                            appliedAt: new Date().toLocaleString('ja-JP')
+                        });
+                    }
+
+                    await saveSystem();
+                    render();
+                    toast(`JSパッチ「${title}」を適用しました`);
+                } catch (err) {
+                    toast(`JSパッチ実行エラー: ${err.message}`, true);
+                }
+            });
+
+            document.getElementById('installedJsPatchesList').addEventListener('click', async (e) => {
+                if (!isHost()) return;
+                const list = Array.isArray(sys.jsPatches) ? sys.jsPatches : [];
+
+                const runBtn = e.target.closest('[data-run-saved-js-patch]');
+                if (runBtn) {
+                    const p = list.find((x) => x.id === runBtn.dataset.runSavedJsPatch);
+                    if (!p) return;
+                    try {
+                        await executeJsPatchCode(p.code, p);
+                        render();
+                        toast(`「${p.title || p.id}」を実行しました`);
+                    } catch (err) {
+                        toast(`JS実行エラー: ${err.message}`, true);
+                    }
+                    return;
+                }
+
+                const loadBtn = e.target.closest('[data-load-saved-js-patch]');
+                if (loadBtn) {
+                    const p = list.find((x) => x.id === loadBtn.dataset.loadSavedJsPatch);
+                    if (!p) return;
+                    document.getElementById('jsPatchIdInput').value = p.id || '';
+                    document.getElementById('jsPatchTitleInput').value = p.title || '';
+                    document.getElementById('customJsPatchCodeInput').value = p.code || '';
+                    document.getElementById('jsPatchPersistCheckbox').checked = p.enabled !== false;
+                    toast(`「${p.title || p.id}」を入力欄に読み込みました`);
+                    return;
+                }
+
+                const toggleBtn = e.target.closest('[data-toggle-saved-js-patch]');
+                if (toggleBtn) {
+                    const p = list.find((x) => x.id === toggleBtn.dataset.toggleSavedJsPatch);
+                    if (!p) return;
+                    p.enabled = p.enabled === false ? true : false;
+                    await saveSystem();
+                    render();
+                    toast(`自動適用を${p.enabled ? 'ON' : 'OFF'}にしました`);
+                    return;
+                }
+
+                const delBtn = e.target.closest('[data-del-saved-js-patch]');
+                if (delBtn) {
+                    const pid = delBtn.dataset.delSavedJsPatch;
+                    const p = list.find((x) => x.id === pid);
+                    if (!p) return;
+                    askConfirm('保存済みJSパッチの削除', `「${p.title || p.id}」を削除しますか？`, async () => {
+                        sys.jsPatches = (sys.jsPatches || []).filter((x) => x.id !== pid);
+                        await saveSystem();
+                        render();
+                        toast('JSパッチを削除しました');
+                    });
+                }
+            });
+
             document.getElementById('rollbackPatchBtn').addEventListener('click', () => {
                 const db = getActiveDb();
                 if (!db || !isHost()) return;
@@ -3757,66 +4009,90 @@
                     toast('ロールバック可能なスナップショットがありません', true);
                     return;
                 }
-                askConfirm('ロールバック実行', `スナップショット（${db.lastSnapshot.savedAt}）の状態へ戻しますか？`, async () => {
-                    db.schemaVersion = db.lastSnapshot.schemaVersion;
-                    db.shops = clone(db.lastSnapshot.shops);
-                    db.visits = clone(db.lastSnapshot.visits);
+                askConfirm('直前スナップショットへ戻す', `スナップショット（${db.lastSnapshot.savedAt}）の状態へ復元しますか？`, async () => {
+                    db.shops = clone(db.lastSnapshot.shops || []);
+                    db.visits = clone(db.lastSnapshot.visits || []);
+                    db.schemaVersion = db.lastSnapshot.schemaVersion || db.schemaVersion;
                     await saveSystem();
                     render();
-                    toast('直前スナップショットへ復元しました');
+                    toast('直前のスナップショットへ戻しました');
                 });
             });
 
             document.getElementById('confirmDialogCancelBtn').addEventListener('click', closeConfirmDialog);
-            document.getElementById('confirmDialogOkBtn').addEventListener('click', () => {
+            document.getElementById('confirmDialogOkBtn').addEventListener('click', async () => {
                 const fn = pendingConfirmAction;
                 closeConfirmDialog();
-                if (typeof fn === 'function') fn();
+                if (typeof fn === 'function') await fn();
+            });
+        }
+
+        let initialUrlApplied = false;
+        let snapshotUnsubscribe = null;
+
+        function startFirestoreListener() {
+            if (snapshotUnsubscribe) snapshotUnsubscribe();
+            snapshotUnsubscribe = onSnapshot(SYSTEM_DOC_REF, async (snap) => {
+                if (snap.exists()) {
+                    mergeSystemPayload(snap.data());
+                    setSyncStatus('synced', 'クラウド同期済');
+                } else {
+                    const local = loadLocalFallback();
+                    if (local) mergeSystemPayload(local);
+                    else sys = createInitialSystemData();
+                    try {
+                        await setDoc(SYSTEM_DOC_REF, { ...sys, updatedAt: new Date().toISOString() });
+                        setSyncStatus('synced', 'クラウド初期化済');
+                    } catch (e) {
+                        console.error('初期ドキュメント作成エラー:', e);
+                        setSyncStatus('error', 'Firestore書込不可');
+                    }
+                }
+                if (!initialUrlApplied) {
+                    initialUrlApplied = true;
+                    applyUrlParams();
+                }
+                if (currentAuthUser && !currentAuthUser.isAnonymous) {
+                    await ensureUserRegisteredInSystem(currentAuthUser);
+                }
+                render();
+            }, (err) => {
+                console.error('Firestoreリスナーエラー:', err);
+                const local = loadLocalFallback();
+                if (local) mergeSystemPayload(local);
+                setSyncStatus('error', '接続エラー');
+                if (!initialUrlApplied) {
+                    initialUrlApplied = true;
+                    applyUrlParams();
+                }
+                render();
             });
         }
 
         async function bootstrapApp() {
-            const localBackup = loadLocalFallback();
-            if (localBackup) mergeSystemPayload(localBackup);
-            applyUrlParams();
+            const local = loadLocalFallback();
+            if (local) mergeSystemPayload(local);
             bindEvents();
             render();
 
             onAuthStateChanged(auth, async (user) => {
-                currentAuthUser = user;
+                currentAuthUser = user || null;
                 if (!user) {
                     try {
                         await signInAnonymously(auth);
                     } catch (e) {
-                        console.error('匿名ログインエラー:', e);
+                        console.error('匿名サインインエラー:', e);
+                        render();
                     }
-                } else if (!user.isAnonymous && user.email) {
+                    return;
+                }
+                if (!user.isAnonymous && user.email) {
                     await ensureUserRegisteredInSystem(user);
                 }
                 render();
             });
 
-            onSnapshot(
-                SYSTEM_DOC_REF,
-                async (snap) => {
-                    if (snap.exists()) {
-                        mergeSystemPayload(snap.data());
-                        if (currentAuthUser && !currentAuthUser.isAnonymous) {
-                            await ensureUserRegisteredInSystem(currentAuthUser);
-                        }
-                        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(sys)); } catch (_) {}
-                        setSyncStatus('synced', 'クラウド同期済');
-                        render();
-                    } else {
-                        await saveSystem();
-                    }
-                },
-                (err) => {
-                    console.error('Firestore購読エラー:', err);
-                    setSyncStatus('error', '同期オフライン');
-                    toast('クラウドデータの取得に失敗しました', true);
-                }
-            );
+            startFirestoreListener();
         }
 
         bootstrapApp();
