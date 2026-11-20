@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Ramen DB - マルチDB・3ロール対応ラーメンデータベース</title>
+    <title>My Ramen DB 88</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Inter & Noto Sans JP -->
@@ -34,20 +34,10 @@
         };
     </script>
     <style>
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f5ebe0;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #d6c7b8;
-            border-radius: 9999px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #b91c1c;
-        }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f5ebe0; }
+        ::-webkit-scrollbar-thumb { background: #d6c7b8; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #b91c1c; }
     </style>
 </head>
 <body class="bg-ramen-cream text-ramen-black font-sans antialiased min-h-screen flex flex-col selection:bg-ramen-red selection:text-white">
@@ -136,15 +126,18 @@
                         </div>
                         <h2 class="text-xl sm:text-2xl font-black text-ramen-black">どのラーメンデータベースを開きますか？</h2>
                         <p class="text-xs sm:text-sm text-stone-600 leading-relaxed">
-                            URLを知っている方や招待リンクでアクセスした方は<strong>ログイン不要でリアルタイム閲覧</strong>できます。
-                            許可された<strong>書き込みユーザー</strong>は自分のDB作成や許可DBへの記録が可能、<strong>ホスト</strong>は項目追加・権限管理・パッチ適用まで操作できます。
+                            URLを知っている方は<strong>ログイン不要で閲覧</strong>できます（閲覧パスワード設定DBはパスワード入力で閲覧可）。
+                            <strong>書き込みユーザー</strong>は自分のDBを1つまで作成・編集でき、<strong>ホスト</strong>は全DBの閲覧・編集・消去・項目追加・パッチダウンロードが可能です。
                         </p>
                     </div>
-                    <div class="flex flex-wrap gap-2 shrink-0">
+                    <div class="flex flex-wrap gap-2 shrink-0 items-center">
                         <button id="lobbyCreateDbBtn" type="button" class="hidden px-4 py-2.5 bg-ramen-red hover:bg-red-600 text-white rounded-xl text-xs sm:text-sm font-bold shadow transition flex items-center gap-2">
                             <i class="fa-solid fa-plus-circle"></i>
-                            <span>新しい自分のDBを作成</span>
+                            <span id="lobbyCreateDbBtnLabel">自分のDBを作成（1人1つまで）</span>
                         </button>
+                        <span id="lobbyDbLimitNotice" class="hidden text-xs font-bold bg-stone-100 text-stone-600 border border-stone-200 px-3 py-2 rounded-xl">
+                            <i class="fa-solid fa-check-circle text-emerald-600 mr-1"></i>自分のDB作成済み（1人1つまで）
+                        </span>
                         <button id="lobbyQuickInviteBtn" type="button" class="px-4 py-2.5 bg-ramen-cream hover:bg-amber-100 text-ramen-black border border-stone-300 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2">
                             <i class="fa-solid fa-key text-amber-600"></i>
                             <span>ログイン / 招待コード</span>
@@ -159,21 +152,21 @@
                             <span class="text-xs font-black text-sky-900"><i class="fa-solid fa-eye mr-1.5"></i>閲覧者 (Viewer)</span>
                             <span class="text-[10px] font-bold bg-sky-100 text-sky-800 px-2 py-0.5 rounded-full">ログイン不要</span>
                         </div>
-                        <p class="text-[11px] text-sky-950/80">公開または招待されたDBの店舗・訪問履歴・メニュー・コールを閲覧できます。</p>
+                        <p class="text-[11px] text-sky-950/80">公開DB（パスワード付きは解除後）を閲覧できます。新規アカウント登録直後もまず閲覧者になります。</p>
                     </div>
                     <div class="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/80 space-y-1">
                         <div class="flex items-center justify-between">
                             <span class="text-xs font-black text-amber-950"><i class="fa-solid fa-pen-to-square mr-1.5"></i>書き込みユーザー (Writer)</span>
-                            <span class="text-[10px] font-bold bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full">許可制 / 招待制</span>
+                            <span class="text-[10px] font-bold bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full">ホスト許可制</span>
                         </div>
-                        <p class="text-[11px] text-amber-950/80">自分のラーメンDBページの作成や、書き込み許可を受けたDBの記録追加・編集ができます。</p>
+                        <p class="text-[11px] text-amber-950/80">ホストから許可されると自分のDB（1人1つまで）を作成でき、自分が許可されたDBのみ編集可能です。</p>
                     </div>
                     <div class="p-3.5 rounded-2xl bg-red-50/70 border border-red-200/80 space-y-1">
                         <div class="flex items-center justify-between">
                             <span class="text-xs font-black text-ramen-darkRed"><i class="fa-solid fa-crown mr-1.5"></i>ホスト (Host)</span>
                             <span class="text-[10px] font-bold bg-red-100 text-ramen-red px-2 py-0.5 rounded-full">製作者専用</span>
                         </div>
-                        <p class="text-[11px] text-red-950/80">項目追加・根本設定・ユーザー/招待管理・パッチ適用など深いシステム操作が可能です。</p>
+                        <p class="text-[11px] text-red-950/80">全DBを無条件閲覧・編集・消去可能。ユーザー権限付与・選択項目追加・パッチダウンロードも行えます。</p>
                     </div>
                 </div>
             </div>
@@ -201,6 +194,7 @@
                     <div class="flex items-center gap-2 flex-wrap">
                         <span id="activeDbBadge" class="text-[11px] font-bold bg-ramen-red text-white px-2.5 py-0.5 rounded-full"></span>
                         <span id="activeDbVisibilityBadge" class="text-[11px] font-bold bg-stone-100 text-stone-700 px-2.5 py-0.5 rounded-full"></span>
+                        <span id="activeDbPasswordBadge" class="hidden text-[11px] font-bold bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded-full"><i class="fa-solid fa-lock mr-1"></i>閲覧パスワード保護中</span>
                         <span id="activeDbSchemaBadge" class="text-[11px] font-mono text-stone-400"></span>
                     </div>
                     <h2 id="activeDbTitle" class="text-lg sm:text-xl font-black text-ramen-black mt-1 truncate"></h2>
@@ -208,6 +202,14 @@
                 </div>
                 <div class="flex items-center gap-2 shrink-0 flex-wrap">
                     <span id="activeDbPermissionPill" class="text-xs font-black px-3 py-1.5 rounded-xl bg-sky-50 text-sky-800 border border-sky-200"></span>
+                    <button id="openDbSettingsModalBtn" type="button" class="hidden px-3 py-1.5 bg-stone-800 hover:bg-stone-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-lock text-amber-400"></i>
+                        <span>DB設定・パスワード</span>
+                    </button>
+                    <button id="deleteCurrentDbBtn" type="button" class="hidden px-3 py-1.5 bg-red-50 hover:bg-red-100 text-ramen-red border border-red-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-trash-can"></i>
+                        <span>このDBを消去</span>
+                    </button>
                     <button id="copyShareLinkBtn" type="button" class="px-3 py-1.5 bg-ramen-cream hover:bg-amber-100 text-ramen-black border border-stone-300 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
                         <i class="fa-solid fa-share-nodes text-ramen-red"></i>
                         <span>閲覧URLコピー</span>
@@ -407,8 +409,21 @@
                     <div>
                         <span class="text-[11px] font-black bg-amber-400 text-ramen-black px-2.5 py-0.5 rounded-full">HOST ONLY</span>
                         <h3 class="text-lg sm:text-xl font-black mt-1.5"><i class="fa-solid fa-crown text-amber-400 mr-2"></i>ホスト専用コントロールパネル</h3>
-                        <p class="text-xs text-stone-300 mt-0.5">カスタム項目追加・根本スキーマ設定・分類マスタ・書き込みユーザー＆招待リンク・全体バックアップを管理します。</p>
+                        <p class="text-xs text-stone-300 mt-0.5">ユーザーロール管理（閲覧者／書き込みユーザー／ホスト）・DB別書き込み許可・閲覧パスワード設定・選択項目追加・DB消去・バックアップを管理します。</p>
                     </div>
+                </div>
+
+                <!-- 0. 登録アカウントのロール＆DB別書き込み許可管理 -->
+                <div class="bg-white rounded-3xl p-5 shadow-sm border border-stone-200/90 space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-100 pb-2">
+                        <h4 class="text-base font-black text-ramen-black flex items-center gap-2">
+                            <i class="fa-solid fa-users-gear text-ramen-red"></i>
+                            <span>ユーザー権限＆DB別書き込み許可管理</span>
+                        </h4>
+                        <span class="text-[11px] text-stone-500">新規登録直後は自動で「閲覧者」になります</span>
+                    </div>
+
+                    <div id="registeredUsersManagerList" class="space-y-3"></div>
                 </div>
 
                 <!-- 1. カスタム項目追加＆スキーマ設定 -->
@@ -451,11 +466,11 @@
                     <div id="customFieldsList" class="space-y-2"></div>
                 </div>
 
-                <!-- 2. 分類マスタ設定（ジャンル・支払方法・購入方法・駐車場・席・ティッシュ） -->
+                <!-- 2. 分類マスタ設定（選択項目の追加・削除） -->
                 <div class="bg-white rounded-3xl p-5 shadow-sm border border-stone-200/90 space-y-4">
                     <h4 class="text-base font-black text-ramen-black flex items-center gap-2 border-b border-stone-100 pb-2">
                         <i class="fa-solid fa-tags text-amber-600"></i>
-                        <span>分類マスタ設定（選択肢の追加・削除）</span>
+                        <span>選択項目マスタ設定（選択肢の追加・削除）</span>
                     </h4>
 
                     <div id="hostClassCatTabs" class="flex flex-wrap gap-1.5">
@@ -468,19 +483,19 @@
                     </div>
 
                     <form id="hostAddClassItemForm" class="flex gap-2">
-                        <input id="hostNewClassItemInput" type="text" required placeholder="新しい分類選択肢を追加..." class="flex-grow px-3.5 py-2 bg-ramen-cream/60 border border-stone-300 rounded-xl text-xs sm:text-sm">
+                        <input id="hostNewClassItemInput" type="text" required placeholder="新しい選択項目を追加..." class="flex-grow px-3.5 py-2 bg-ramen-cream/60 border border-stone-300 rounded-xl text-xs sm:text-sm">
                         <button type="submit" class="px-4 py-2 bg-ramen-black hover:bg-stone-800 text-white rounded-xl text-xs font-bold shrink-0">追加</button>
                     </form>
 
                     <div id="hostClassItemsList" class="flex flex-wrap gap-2"></div>
                 </div>
 
-                <!-- 3. 根本設定・書き込みユーザー・招待リンク -->
+                <!-- 3. 対象DB根本設定・閲覧パスワード・消去＆招待リンク -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
                     <div class="bg-white rounded-3xl p-5 shadow-sm border border-stone-200/90 space-y-4">
                         <h4 class="text-base font-black text-ramen-black flex items-center gap-2 border-b border-stone-100 pb-2">
                             <i class="fa-solid fa-gears text-stone-700"></i>
-                            <span>DB根本設定・Firebase連携状態</span>
+                            <span>現在開いているDBの設定・閲覧パスワード・消去</span>
                         </h4>
 
                         <form id="hostFundamentalForm" class="space-y-3 text-xs">
@@ -492,12 +507,16 @@
                                 <label for="hostDbDescInput" class="block font-bold text-stone-700 mb-1">DB説明文</label>
                                 <input id="hostDbDescInput" type="text" class="w-full px-3 py-2 bg-ramen-cream/60 border border-stone-300 rounded-xl">
                             </div>
+                            <div>
+                                <label for="hostDbViewPasswordInput" class="block font-bold text-stone-700 mb-1">閲覧パスワード（空欄でパスワードなし・ホストは無条件閲覧可）</label>
+                                <input id="hostDbViewPasswordInput" type="text" placeholder="パスワードを設定しない場合は空欄" class="w-full px-3 py-2 bg-amber-50/70 border border-amber-300 rounded-xl font-mono">
+                            </div>
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label for="hostDbVisibilitySelect" class="block font-bold text-stone-700 mb-1">公開範囲</label>
+                                    <label for="hostDbVisibilitySelect" class="block font-bold text-stone-700 mb-1">表示ラベル</label>
                                     <select id="hostDbVisibilitySelect" class="w-full px-3 py-2 bg-ramen-cream/60 border border-stone-300 rounded-xl font-bold">
-                                        <option value="public_read">URL共有で誰でも閲覧可</option>
-                                        <option value="invite_read">招待/許可メンバー中心</option>
+                                        <option value="public_read">URL共有で閲覧可</option>
+                                        <option value="invite_read">招待/共有メンバー中心</option>
                                     </select>
                                 </div>
                                 <div>
@@ -506,40 +525,35 @@
                                 </div>
                             </div>
 
-                            <div class="bg-emerald-50/80 p-3 rounded-2xl border border-emerald-200 space-y-1.5">
-                                <span class="block font-black text-emerald-950"><i class="fa-solid fa-cloud-check mr-1 text-emerald-600"></i>Firebase 接続済み: my-ramen-db88</span>
-                                <p class="text-[11px] text-emerald-900 leading-relaxed">
-                                    Cloud Firestore（リアルタイム同期）と Authentication（匿名＋メール/パスワード）に接続されています。ホストメールアドレス：<span id="hostEmailDisplay" class="font-mono font-bold">未設定</span>
-                                </p>
+                            <div class="flex gap-2 pt-1">
+                                <button type="submit" class="flex-1 py-2.5 bg-ramen-red hover:bg-red-600 text-white rounded-xl text-xs font-bold transition">
+                                    DB設定を保存
+                                </button>
+                                <button id="hostDeleteThisDbBtn" type="button" class="px-4 py-2.5 bg-red-100 hover:bg-red-200 text-ramen-darkRed rounded-xl text-xs font-bold transition">
+                                    <i class="fa-solid fa-trash-can mr-1"></i>このDBを削除
+                                </button>
                             </div>
-
-                            <button type="submit" class="w-full py-2.5 bg-ramen-red hover:bg-red-600 text-white rounded-xl text-xs font-bold transition">
-                                根本設定を保存
-                            </button>
                         </form>
                     </div>
 
                     <div class="bg-white rounded-3xl p-5 shadow-sm border border-stone-200/90 space-y-4">
                         <h4 class="text-base font-black text-ramen-black flex items-center gap-2 border-b border-stone-100 pb-2">
-                            <i class="fa-solid fa-user-check text-ramen-red"></i>
-                            <span>書き込みユーザー＆招待リンク管理</span>
+                            <i class="fa-solid fa-link text-ramen-red"></i>
+                            <span>招待トークン発行（ゲスト書き込み許可リンク）</span>
                         </h4>
 
-                        <form id="addWriterForm" class="flex gap-2">
-                            <input id="newWriterNameInput" type="text" required placeholder="許可するユーザー名またはメールアドレス" class="flex-grow px-3 py-2 bg-ramen-cream/60 border border-stone-300 rounded-xl text-xs">
-                            <button type="submit" class="px-3.5 py-2 bg-ramen-black hover:bg-stone-800 text-white rounded-xl text-xs font-bold shrink-0">許可追加</button>
-                        </form>
+                        <p class="text-xs text-stone-600 leading-relaxed">
+                            メールアドレス登録なしで一時的に書き込み許可を与える場合に使用します。対象DBは上で許可したDBに限定されます。
+                        </p>
 
-                        <div id="writersList" class="space-y-1.5 max-h-36 overflow-y-auto"></div>
-
-                        <div class="pt-2 border-t border-stone-100 space-y-2">
+                        <div class="space-y-2">
                             <div class="flex items-center justify-between">
-                                <span class="text-xs font-black text-stone-800">書き込み招待リンク発行</span>
+                                <span class="text-xs font-black text-stone-800">招待リンク一覧</span>
                                 <button id="generateInviteBtn" type="button" class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-950 rounded-xl text-xs font-bold transition">
                                     <i class="fa-solid fa-link mr-1"></i>新規トークン発行
                                 </button>
                             </div>
-                            <div id="invitesList" class="space-y-2 max-h-40 overflow-y-auto"></div>
+                            <div id="invitesList" class="space-y-2 max-h-48 overflow-y-auto"></div>
                         </div>
                     </div>
                 </div>
@@ -562,17 +576,22 @@
                 </div>
             </div>
 
-            <!-- サブビューD: パッチ適用画面（Hostのみ） -->
+            <!-- サブビューD: パッチ適用＆ダウンロード画面（Hostのみ） -->
             <div id="subviewPatch" class="hidden space-y-6">
                 <div class="bg-ramen-black text-white rounded-3xl p-5 border-2 border-emerald-400 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                         <span class="text-[11px] font-black bg-emerald-400 text-ramen-black px-2.5 py-0.5 rounded-full">HOST PATCH TOOL</span>
-                        <h3 class="text-lg sm:text-xl font-black mt-1.5"><i class="fa-solid fa-wand-magic-sparkles text-emerald-400 mr-2"></i>アップデート・データパッチ適用画面</h3>
-                        <p class="text-xs text-stone-300 mt-0.5">パッチ実行前に自動でスナップショットを保存します。問題があれば直前バックアップへロールバックできます。</p>
+                        <h3 class="text-lg sm:text-xl font-black mt-1.5"><i class="fa-solid fa-wand-magic-sparkles text-emerald-400 mr-2"></i>パッチ適用・パッチファイルダウンロード</h3>
+                        <p class="text-xs text-stone-300 mt-0.5">選択項目マスタや現在DBの差分パッチJSONをダウンロードしたり、パッチ適用・ロールバックを行えます。</p>
                     </div>
-                    <button id="rollbackPatchBtn" type="button" class="px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-ramen-black rounded-xl text-xs font-black transition shrink-0">
-                        <i class="fa-solid fa-rotate-left mr-1.5"></i>直前スナップショットへ戻す
-                    </button>
+                    <div class="flex flex-wrap gap-2 shrink-0">
+                        <button id="downloadDbPatchBtn" type="button" class="px-4 py-2.5 bg-emerald-400 hover:bg-emerald-300 text-ramen-black rounded-xl text-xs font-black transition">
+                            <i class="fa-solid fa-download mr-1.5"></i>現在DBのパッチJSONをダウンロード
+                        </button>
+                        <button id="rollbackPatchBtn" type="button" class="px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-ramen-black rounded-xl text-xs font-black transition">
+                            <i class="fa-solid fa-rotate-left mr-1.5"></i>直前スナップショットへ戻す
+                        </button>
+                    </div>
                 </div>
 
                 <!-- プリセットパッチ -->
@@ -610,12 +629,21 @@
 
                 <!-- カスタムJSONパッチ -->
                 <div class="bg-white rounded-3xl p-5 shadow-sm border border-stone-200/90 space-y-3">
-                    <h4 class="text-base font-black text-ramen-black">カスタムJSONパッチ適用</h4>
+                    <div class="flex items-center justify-between flex-wrap gap-2">
+                        <h4 class="text-base font-black text-ramen-black">カスタムJSONパッチ適用＆ファイル出力</h4>
+                        <label class="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 border border-stone-300 rounded-xl text-xs font-bold cursor-pointer">
+                            <i class="fa-solid fa-file-arrow-up mr-1 text-emerald-700"></i>パッチJSONファイルを読込
+                            <input id="loadPatchFileInput" type="file" accept=".json,application/json" class="hidden">
+                        </label>
+                    </div>
                     <p class="text-xs text-stone-500">
-                        `{"patchId":"patch-custom-1","title":"名称変更","defaultGenre":"醤油","schemaVersion":"1.2.0"}` のようなJSONを指定して対象DBへ適用できます。
+                        マスタ選択項目・カスタム項目・スキーマバージョン・レコード補正を含むパッチJSONの適用およびダウンロードが可能です。
                     </p>
-                    <textarea id="customPatchJsonInput" rows="4" placeholder='{"patchId":"patch-custom-01","title":"ジャンル初期値更新","defaultGenre":"家系","schemaVersion":"1.2.0"}' class="w-full p-3 bg-stone-900 text-emerald-300 font-mono text-xs rounded-2xl border border-stone-700 focus:outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
-                    <div class="flex justify-end">
+                    <textarea id="customPatchJsonInput" rows="5" placeholder='{"patchId":"patch-custom-01","title":"ジャンル初期値更新","defaultGenre":"家系","schemaVersion":"1.2.0"}' class="w-full p-3 bg-stone-900 text-emerald-300 font-mono text-xs rounded-2xl border border-stone-700 focus:outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
+                    <div class="flex flex-wrap justify-end gap-2">
+                        <button id="downloadCustomPatchTextareaBtn" type="button" class="px-4 py-2.5 bg-stone-800 hover:bg-stone-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-2">
+                            <i class="fa-solid fa-download"></i><span>テキスト内容PatchをDL</span>
+                        </button>
                         <button id="applyCustomPatchBtn" type="button" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-2">
                             <i class="fa-solid fa-play"></i><span>JSONパッチを実行</span>
                         </button>
@@ -634,7 +662,7 @@
     <!-- フッター -->
     <footer class="bg-ramen-black text-stone-400 text-xs py-6 mt-12 border-t border-stone-800">
         <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
-            <p class="font-bold text-stone-300">My Ramen DB - 閲覧者・書き込みユーザー・ホスト 3ロール対応</p>
+            <p class="font-bold text-stone-300">My Ramen DB - 閲覧者・書き込みユーザー・ホスト 3ロール厳格分離対応</p>
             <p>Firebase Cloud Firestore リアルタイム同期＋Authentication 認証対応</p>
         </div>
     </footer>
@@ -645,7 +673,7 @@
     </button>
 
     <!-- =========================================================
-         モーダル1: 訪問履歴の追加・編集（店舗呼び込み検索＆クイック追加）
+         モーダル1: 訪問履歴の追加・編集
     ========================================================== -->
     <div id="visitModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
         <div class="bg-white w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col">
@@ -663,7 +691,6 @@
                 <input type="hidden" id="visitEditId">
                 <input type="hidden" id="visitShopId">
 
-                <!-- 店舗呼び込み＆絞り込み検索 -->
                 <div class="bg-ramen-cream/80 border border-stone-300/90 rounded-2xl p-3.5 space-y-3">
                     <div class="flex items-center justify-between gap-2">
                         <span class="text-xs font-black text-ramen-black flex items-center gap-1.5">
@@ -721,7 +748,6 @@
                     <input id="vMenuInput" type="text" required placeholder="例: ラーメン並、特製つけ麺" class="w-full px-3.5 py-2.5 bg-ramen-cream/50 border border-stone-300 rounded-xl text-sm">
                 </div>
 
-                <!-- 味の濃さ（1〜5星）＆ 量（5段階） -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 bg-stone-50 p-3.5 rounded-2xl border border-stone-200">
                     <div>
                         <div class="flex items-center justify-between mb-1">
@@ -750,7 +776,6 @@
                     </div>
                 </div>
 
-                <!-- 評価 -->
                 <div class="bg-ramen-cream/60 p-3.5 rounded-2xl border border-stone-200">
                     <div class="flex items-center justify-between mb-1">
                         <label for="vRatingRange" class="text-xs font-bold text-stone-700">総合評価</label>
@@ -764,10 +789,8 @@
                     <input id="vCallInput" type="text" placeholder="例: 麺硬め・味濃いめ・脂多め" class="w-full px-3.5 py-2.5 bg-ramen-cream/50 border border-stone-300 rounded-xl text-sm">
                 </div>
 
-                <!-- ホスト追加カスタム項目（訪問履歴） -->
                 <div id="visitCustomFieldsBox" class="space-y-2.5"></div>
 
-                <!-- 写真（自動圧縮） -->
                 <div>
                     <span class="block text-xs font-bold text-stone-700 mb-1.5">写真（Canvasで自動圧縮保存）</span>
                     <div class="flex items-center gap-4">
@@ -862,7 +885,7 @@
                         </div>
                     </div>
                     <div>
-                        <label for="sTissueNoteInput" class="block text-xs font-bold text-stone-700 mb-1">ティッシュ場所メモ（各席 / 離れた場所など）</label>
+                        <label for="sTissueNoteInput" class="block text-xs font-bold text-stone-700 mb-1">ティッシュ場所メモ</label>
                         <input id="sTissueNoteInput" type="text" placeholder="例: 各カウンター席下 / 給水機横" class="w-full px-3 py-2 bg-white border border-stone-300 rounded-xl text-xs sm:text-sm">
                     </div>
                     <div>
@@ -885,7 +908,6 @@
                     </div>
                 </div>
 
-                <!-- メニュー（写真添付可） -->
                 <div class="space-y-2.5 bg-stone-50 p-4 rounded-2xl border border-stone-200">
                     <div class="flex items-center justify-between">
                         <h3 class="text-xs font-black text-ramen-black"><i class="fa-solid fa-utensils text-ramen-red mr-1.5"></i>メニュー（写真添付可）</h3>
@@ -894,7 +916,6 @@
                     <div id="shopMenuDraftList" class="space-y-2.5"></div>
                 </div>
 
-                <!-- コール（写真添付可） -->
                 <div class="space-y-2.5 bg-amber-50/50 p-4 rounded-2xl border border-amber-200">
                     <h3 class="text-xs font-black text-amber-950"><i class="fa-solid fa-bullhorn text-amber-600 mr-1.5"></i>コール・お好み指定（写真添付可）</h3>
                     <textarea id="sCallGuideInput" rows="2" placeholder="例: 硬め・濃いめ・多め / ヤサイ・ニンニク・アブラ・カラメ" class="w-full px-3.5 py-2 bg-white border border-stone-300 rounded-xl text-sm"></textarea>
@@ -938,7 +959,6 @@
                     </div>
                 </div>
 
-                <!-- ホスト追加カスタム項目（店舗マスタ） -->
                 <div id="shopCustomFieldsBox" class="space-y-2.5"></div>
 
                 <div class="pt-2 flex gap-3 sticky bottom-0 bg-white py-2 border-t border-stone-100">
@@ -986,6 +1006,7 @@
                         <span id="authLoggedInRoleTag" class="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-600 text-white"></span>
                     </div>
                     <p id="authLoggedInEmail" class="font-mono text-emerald-900 break-all"></p>
+                    <p id="authLoggedInRoleHint" class="text-[11px] text-emerald-900/80"></p>
                     <button id="authLogoutBtn" type="button" class="w-full py-2 bg-stone-800 hover:bg-stone-700 text-white rounded-xl font-bold transition">
                         ログアウトして閲覧者に戻る
                     </button>
@@ -993,7 +1014,7 @@
 
                 <!-- メール/パスワードログインフォーム -->
                 <form id="authLoginForm" class="space-y-3">
-                    <p class="font-black text-ramen-black">書き込みユーザー / ホスト ログイン</p>
+                    <p class="font-black text-ramen-black">アカウントログイン / 新規登録</p>
                     <div>
                         <label for="authEmailInput" class="block font-bold text-stone-700 mb-1">メールアドレス</label>
                         <input id="authEmailInput" type="email" required placeholder="example@gmail.com" class="w-full px-3 py-2 bg-ramen-cream/60 border border-stone-300 rounded-xl text-sm">
@@ -1011,7 +1032,7 @@
                         </button>
                     </div>
                     <p class="text-[11px] text-stone-500 leading-relaxed">
-                        ※ 最初に登録・ログインしたアカウントが自動的に<strong>ホスト（Host）</strong>として登録されます。
+                        ※ 最初に登録した1人目のみ<strong>ホスト</strong>になり、2人目以降の新規登録直後は<strong>閲覧者（Viewer）</strong>として登録されます。ホストが許可すると書き込みユーザーになります。
                     </p>
                 </form>
 
@@ -1022,21 +1043,20 @@
                         <input id="redeemInviteInput" type="text" placeholder="例: INV-XXXX または招待URL" class="flex-grow px-3 py-2 bg-ramen-cream/60 border border-stone-300 rounded-xl">
                         <button id="redeemInviteBtn" type="button" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold shrink-0">適用</button>
                     </div>
-                    <p class="text-[11px] text-stone-500">ホスト画面で発行した招待トークンを適用すると、匿名状態でも書き込みユーザー権限が付与されます。</p>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- =========================================================
-         モーダル5: 新規DB作成（Writer / Host）
+         モーダル5: 新規DB作成（1人1つまで・閲覧パスワード設定対応）
     ========================================================== -->
     <div id="createDbModal" class="fixed inset-0 z-[60] hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
         <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden my-auto">
             <div class="bg-ramen-black text-white px-5 py-4 flex items-center justify-between border-b-2 border-ramen-red">
                 <h2 class="text-base font-bold flex items-center gap-2">
                     <i class="fa-solid fa-plus-circle text-ramen-gold"></i>
-                    <span>新しいラーメンDBを作成</span>
+                    <span>自分のラーメンDBを作成（1人1つまで）</span>
                 </h2>
                 <button id="closeCreateDbModalBtn" type="button" class="w-8 h-8 rounded-full bg-stone-800 hover:bg-stone-700 text-stone-300 flex items-center justify-center">
                     <i class="fa-solid fa-xmark"></i>
@@ -1048,8 +1068,13 @@
                     <input id="newDbTitleInput" type="text" required placeholder="例: 〇〇のラーメン記録" class="w-full px-3.5 py-2.5 bg-ramen-cream/60 border border-stone-300 rounded-xl text-sm">
                 </div>
                 <div>
-                    <label for="newDbOwnerInput" class="block font-bold text-stone-700 mb-1">オーナー名</label>
+                    <label for="newDbOwnerInput" class="block font-bold text-stone-700 mb-1">オーナー表示名</label>
                     <input id="newDbOwnerInput" type="text" placeholder="例: 〇〇" class="w-full px-3.5 py-2.5 bg-ramen-cream/60 border border-stone-300 rounded-xl text-sm">
+                </div>
+                <div>
+                    <label for="newDbViewPasswordInput" class="block font-bold text-stone-700 mb-1">閲覧パスワード（任意・空欄ならパスワードなしで誰でも閲覧可）</label>
+                    <input id="newDbViewPasswordInput" type="text" placeholder="パスワードを設定しない場合は空欄" class="w-full px-3.5 py-2.5 bg-amber-50/70 border border-amber-300 rounded-xl text-sm font-mono">
+                    <p class="text-[11px] text-stone-500 mt-1">※ ホストとDB作成者本人はパスワードなしで閲覧できます。</p>
                 </div>
                 <div>
                     <label for="newDbDescInput" class="block font-bold text-stone-700 mb-1">説明文</label>
@@ -1064,7 +1089,72 @@
     </div>
 
     <!-- =========================================================
-         モーダル6: 確認ダイアログ（alert/confirm代替）
+         モーダル6: 閲覧パスワード入力モーダル
+    ========================================================== -->
+    <div id="dbPasswordModal" class="fixed inset-0 z-[65] hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden">
+            <div class="bg-ramen-black text-white px-5 py-4 flex items-center justify-between border-b-2 border-amber-400">
+                <h2 class="text-base font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-lock text-amber-400"></i>
+                    <span>閲覧パスワードの入力</span>
+                </h2>
+                <button id="closeDbPasswordModalBtn" type="button" class="w-8 h-8 rounded-full bg-stone-800 hover:bg-stone-700 text-stone-300 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <form id="dbPasswordForm" class="p-5 space-y-4 text-xs">
+                <input type="hidden" id="targetLockedDbId">
+                <p id="targetLockedDbTitle" class="font-black text-sm text-ramen-black"></p>
+                <p class="text-stone-600">このデータベースには閲覧パスワードが設定されています。閲覧するにはパスワードを入力してください。</p>
+                <div>
+                    <label for="dbUnlockPasswordInput" class="block font-bold text-stone-700 mb-1">閲覧パスワード</label>
+                    <input id="dbUnlockPasswordInput" type="password" required placeholder="パスワードを入力..." class="w-full px-3.5 py-2.5 bg-ramen-cream/60 border border-stone-300 rounded-xl text-sm">
+                </div>
+                <div class="flex gap-3">
+                    <button id="cancelDbPasswordBtn" type="button" class="flex-1 py-2.5 bg-stone-200 text-stone-700 rounded-xl font-bold">キャンセル</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-ramen-red hover:bg-red-600 text-white rounded-xl font-bold">解除して開く</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- =========================================================
+         モーダル7: DB別設定・閲覧パスワード変更モーダル（DBオーナー・ホスト用）
+    ========================================================== -->
+    <div id="dbOwnerSettingsModal" class="fixed inset-0 z-[65] hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden">
+            <div class="bg-ramen-black text-white px-5 py-4 flex items-center justify-between border-b-2 border-amber-400">
+                <h2 class="text-base font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-amber-400"></i>
+                    <span>DB設定・閲覧パスワード変更</span>
+                </h2>
+                <button id="closeDbOwnerSettingsBtn" type="button" class="w-8 h-8 rounded-full bg-stone-800 hover:bg-stone-700 text-stone-300 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <form id="dbOwnerSettingsForm" class="p-5 space-y-4 text-xs">
+                <div>
+                    <label for="editDbTitleInput" class="block font-bold text-stone-700 mb-1">DBタイトル</label>
+                    <input id="editDbTitleInput" type="text" required class="w-full px-3.5 py-2 bg-ramen-cream/60 border border-stone-300 rounded-xl text-sm font-bold">
+                </div>
+                <div>
+                    <label for="editDbDescInput" class="block font-bold text-stone-700 mb-1">説明文</label>
+                    <textarea id="editDbDescInput" rows="2" class="w-full px-3.5 py-2 bg-ramen-cream/60 border border-stone-300 rounded-xl text-sm"></textarea>
+                </div>
+                <div>
+                    <label for="editDbViewPasswordInput" class="block font-bold text-stone-700 mb-1">閲覧パスワード（空欄にするとパスワードなし）</label>
+                    <input id="editDbViewPasswordInput" type="text" placeholder="空欄＝パスワードなし" class="w-full px-3.5 py-2 bg-amber-50/70 border border-amber-300 rounded-xl text-sm font-mono">
+                </div>
+                <div class="flex gap-3 pt-1">
+                    <button id="cancelDbOwnerSettingsBtn" type="button" class="flex-1 py-2.5 bg-stone-200 text-stone-700 rounded-xl font-bold">キャンセル</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-ramen-red hover:bg-red-600 text-white rounded-xl font-bold">保存する</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- =========================================================
+         モーダル8: 確認ダイアログ
     ========================================================== -->
     <div id="confirmDialog" class="fixed inset-0 z-[70] hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-6 space-y-5 text-center">
@@ -1122,8 +1212,9 @@
         const dbStore = getFirestore(app);
         const SYSTEM_DOC_REF = doc(dbStore, 'ramen_system', 'main');
 
-        const STORAGE_KEY = 'my_ramen_db_multi_v1';
-        const INVITE_SESSION_KEY = 'my_ramen_invite_redeemed';
+        const STORAGE_KEY = 'my_ramen_db_multi_v2';
+        const INVITE_SESSION_KEY = 'my_ramen_invite_redeemed_v2';
+        const UNLOCKED_DBS_SESSION_KEY = 'my_ramen_unlocked_dbs_v2';
 
         const DEFAULT_CLASSIFICATIONS = {
             genres: [
@@ -1172,26 +1263,28 @@
         function createInitialSystemData() {
             return {
                 hostEmail: '',
+                hostUid: '',
                 firebaseProjectId: 'my-ramen-db88',
+                // 登録アカウント一覧: [{ uid, email, role: 'viewer'|'writer'|'host', allowedDbIds: [], createdAt }]
+                users: [],
                 classifications: clone(DEFAULT_CLASSIFICATIONS),
                 customFields: [
                     { id: 'cf-wait', target: 'visits', label: '待ち時間（分）', type: 'number', defaultValue: '' }
                 ],
-                writers: [
-                    { id: 'w-owner', name: '自分のラーメンDBオーナー', canCreateOwnDb: true }
-                ],
                 invites: [
-                    { token: 'INV-RAMEN-2026', label: '書き込み招待リンク（サンプル）', active: true, createdAt: daysAgo(1) }
+                    { token: 'INV-RAMEN-2026', label: 'ゲスト書き込み招待リンク', active: true, allowedDbIds: ['db-shared-demo'], createdAt: daysAgo(1) }
                 ],
                 databases: [
                     {
                         id: 'db-mine',
                         title: '自分のラーメンDB（メイン）',
                         ownerName: 'ホスト（自分）',
+                        ownerUid: '',
+                        ownerEmail: '',
+                        viewPassword: '',
                         description: '家系・ラーショ・佐野ラーメン中心のマイデータベース。',
                         visibility: 'public_read',
                         schemaVersion: '1.0.0',
-                        allowedWriters: ['w-owner'],
                         shops: [
                             {
                                 id: 'shop-1',
@@ -1282,10 +1375,12 @@
                         id: 'db-shared-demo',
                         title: '共有メンバーのラーメン帳（サンプル）',
                         ownerName: '書き込みユーザーA',
-                        description: '招待・許可されたメンバーが記録できる共有サンプルDB。',
+                        ownerUid: '',
+                        ownerEmail: '',
+                        viewPassword: '',
+                        description: '許可された書き込みユーザーが記録できる共有サンプルDB。',
                         visibility: 'public_read',
                         schemaVersion: '1.0.0',
-                        allowedWriters: ['w-owner'],
                         shops: [
                             {
                                 id: 'shop-s1',
@@ -1336,7 +1431,8 @@
 
         let sys = createInitialSystemData();
         let currentAuthUser = null;
-        let hasValidInvite = localStorage.getItem(INVITE_SESSION_KEY) === 'true';
+        let redeemedInviteToken = localStorage.getItem(INVITE_SESSION_KEY) || '';
+        let unlockedDbSessionSet = new Set(JSON.parse(sessionStorage.getItem(UNLOCKED_DBS_SESSION_KEY) || '[]'));
 
         let viewState = {
             screen: 'lobby',
@@ -1396,7 +1492,7 @@
             toast._t = setTimeout(() => {
                 el.classList.remove('opacity-100', 'translate-y-0');
                 el.classList.add('opacity-0', 'translate-y-4');
-            }, 2800);
+            }, 3000);
         }
 
         function setSyncStatus(state, text) {
@@ -1426,27 +1522,119 @@
             document.getElementById('confirmDialog').classList.add('hidden');
         }
 
-        // 現在の権限ロール判定（Authentication状態＋ホスト設定＋招待トークン）
+        // ログイン中のユーザーレコード取得
+        function getCurrentUserRecord() {
+            if (!currentAuthUser || currentAuthUser.isAnonymous || !currentAuthUser.email) return null;
+            const uid = currentAuthUser.uid;
+            const email = currentAuthUser.email.toLowerCase();
+            return (sys.users || []).find((u) => u.uid === uid || (u.email && u.email.toLowerCase() === email)) || null;
+        }
+
+        // 現在のグローバルロール判定（'host' | 'writer' | 'viewer'）
         function getEffectiveRole() {
             if (currentAuthUser && !currentAuthUser.isAnonymous && currentAuthUser.email) {
                 const email = currentAuthUser.email.toLowerCase();
-                if (!sys.hostEmail || sys.hostEmail.toLowerCase() === email) {
+                if (sys.hostEmail && sys.hostEmail.toLowerCase() === email) {
                     return 'host';
                 }
-                return 'writer';
+                const rec = getCurrentUserRecord();
+                if (rec) {
+                    if (rec.role === 'host') return 'host';
+                    if (rec.role === 'writer') return 'writer';
+                    return 'viewer'; // 新規登録直後・未許可ユーザーは閲覧者
+                }
+                // ホスト未設定の初期状態のみホスト
+                if (!sys.hostEmail && (!sys.users || sys.users.length === 0)) {
+                    return 'host';
+                }
+                return 'viewer';
             }
-            if (hasValidInvite) {
-                return 'writer';
+            if (redeemedInviteToken) {
+                const inv = (sys.invites || []).find((x) => x.active && x.token.toLowerCase() === redeemedInviteToken.toLowerCase());
+                if (inv) return 'writer';
             }
             return 'viewer';
+        }
+
+        function isHost() {
+            return getEffectiveRole() === 'host';
         }
 
         function getCurrentUserLabel() {
             if (currentAuthUser && !currentAuthUser.isAnonymous && currentAuthUser.email) {
                 return currentAuthUser.email;
             }
-            if (hasValidInvite) return '招待書き込みユーザー';
+            if (redeemedInviteToken) return `招待ゲスト(${redeemedInviteToken})`;
             return 'ゲスト閲覧者';
+        }
+
+        // ユーザーがすでに「自分のDB（1人1つまで）」を作成済みか判定
+        function getUserOwnedDb() {
+            if (!currentAuthUser || currentAuthUser.isAnonymous) return null;
+            const uid = currentAuthUser.uid;
+            const email = (currentAuthUser.email || '').toLowerCase();
+            return (sys.databases || []).find((d) =>
+                (d.ownerUid && d.ownerUid === uid) ||
+                (d.ownerEmail && email && d.ownerEmail.toLowerCase() === email)
+            ) || null;
+        }
+
+        function canCreateOwnDb() {
+            const role = getEffectiveRole();
+            if (role !== 'writer' && role !== 'host') return false;
+            if (!currentAuthUser || currentAuthUser.isAnonymous) return false;
+            // 1人1つまで（ホストも同様のルールにするか、自分のDB未作成なら作成可）
+            return !getUserOwnedDb();
+        }
+
+        // 指定DBに対して書き込み権限があるか判定
+        // ・ホスト：全員のDBを操作可能
+        // ・書き込みユーザー：自分が作成したDB、またはホストに許可されたDBのみ書き込み可能
+        function canWriteDb(db) {
+            if (!db) return false;
+            const role = getEffectiveRole();
+            if (role === 'host') return true;
+            if (role !== 'writer') return false;
+
+            if (currentAuthUser && !currentAuthUser.isAnonymous) {
+                const uid = currentAuthUser.uid;
+                const email = (currentAuthUser.email || '').toLowerCase();
+                if ((db.ownerUid && db.ownerUid === uid) || (db.ownerEmail && email && db.ownerEmail.toLowerCase() === email)) {
+                    return true;
+                }
+                const rec = getCurrentUserRecord();
+                if (rec && Array.isArray(rec.allowedDbIds) && rec.allowedDbIds.includes(db.id)) {
+                    return true;
+                }
+                return false;
+            }
+
+            if (redeemedInviteToken) {
+                const inv = (sys.invites || []).find((x) => x.active && x.token.toLowerCase() === redeemedInviteToken.toLowerCase());
+                if (inv && Array.isArray(inv.allowedDbIds) && inv.allowedDbIds.includes(db.id)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function canWriteCurrentDb() {
+            return canWriteDb(getActiveDb());
+        }
+
+        // 指定DBの閲覧パスワードが解除済みか（パスワードなし、ホスト、DBオーナー、セッション解除済みならtrue）
+        function canViewDbWithoutPrompt(db) {
+            if (!db) return false;
+            if (!db.viewPassword || String(db.viewPassword).trim() === '') return true;
+            if (isHost()) return true;
+            if (currentAuthUser && !currentAuthUser.isAnonymous) {
+                const uid = currentAuthUser.uid;
+                const email = (currentAuthUser.email || '').toLowerCase();
+                if ((db.ownerUid && db.ownerUid === uid) || (db.ownerEmail && email && db.ownerEmail.toLowerCase() === email)) {
+                    return true;
+                }
+            }
+            return unlockedDbSessionSet.has(db.id);
         }
 
         async function saveSystem() {
@@ -1464,7 +1652,7 @@
             } catch (e) {
                 console.error('Firestore保存エラー:', e);
                 setSyncStatus('error', 'Firestore保存エラー');
-                toast('クラウド保存に失敗しました（Firestoreのルールを確認してください）', true);
+                toast('クラウド保存に失敗しました', true);
             }
         }
 
@@ -1473,9 +1661,7 @@
                 const raw = localStorage.getItem(STORAGE_KEY);
                 if (!raw) return null;
                 const parsed = JSON.parse(raw);
-                if (parsed && Array.isArray(parsed.databases) && parsed.databases.length > 0) {
-                    return parsed;
-                }
+                if (parsed && Array.isArray(parsed.databases)) return parsed;
             } catch (_) {}
             return null;
         }
@@ -1484,13 +1670,73 @@
             const base = createInitialSystemData();
             sys = {
                 hostEmail: String(data.hostEmail || ''),
+                hostUid: String(data.hostUid || ''),
                 firebaseProjectId: 'my-ramen-db88',
+                users: Array.isArray(data.users) ? data.users : [],
                 classifications: Object.assign(base.classifications, data.classifications || {}),
                 customFields: Array.isArray(data.customFields) ? data.customFields : base.customFields,
-                writers: Array.isArray(data.writers) ? data.writers : base.writers,
                 invites: Array.isArray(data.invites) ? data.invites : base.invites,
-                databases: Array.isArray(data.databases) && data.databases.length > 0 ? data.databases : base.databases
+                databases: Array.isArray(data.databases) ? data.databases : base.databases
             };
+        }
+
+        // ログイン中のユーザーを sys.users に確実に登録（初回登録者はhost、2人目以降はviewer）
+        async function ensureUserRegisteredInSystem(user) {
+            if (!user || user.isAnonymous || !user.email) return;
+            const email = user.email.trim();
+            const lower = email.toLowerCase();
+            sys.users = sys.users || [];
+            let existing = sys.users.find((u) => u.uid === user.uid || (u.email && u.email.toLowerCase() === lower));
+
+            let changed = false;
+            if (!sys.hostEmail && sys.users.length === 0) {
+                sys.hostEmail = email;
+                sys.hostUid = user.uid;
+                changed = true;
+            }
+
+            if (!existing) {
+                const isFirstHost = sys.hostEmail && sys.hostEmail.toLowerCase() === lower;
+                existing = {
+                    uid: user.uid,
+                    email,
+                    role: isFirstHost ? 'host' : 'viewer',
+                    allowedDbIds: [],
+                    createdAt: daysAgo(0)
+                };
+                sys.users.push(existing);
+                // 初期サンプルDBのオーナーが空なら最初のホストに紐付け
+                if (isFirstHost && sys.databases[0] && !sys.databases[0].ownerUid) {
+                    sys.databases[0].ownerUid = user.uid;
+                    sys.databases[0].ownerEmail = email;
+                    sys.databases[0].ownerName = email.split('@')[0];
+                }
+                changed = true;
+            } else if (!existing.uid) {
+                existing.uid = user.uid;
+                changed = true;
+            }
+
+            if (changed) {
+                await saveSystem();
+            }
+        }
+
+        function requestOpenDb(dbId) {
+            const db = sys.databases.find((d) => d.id === dbId);
+            if (!db) return;
+            if (!canViewDbWithoutPrompt(db)) {
+                document.getElementById('targetLockedDbId').value = db.id;
+                document.getElementById('targetLockedDbTitle').textContent = `対象DB: ${db.title}`;
+                document.getElementById('dbUnlockPasswordInput').value = '';
+                document.getElementById('dbPasswordModal').classList.remove('hidden');
+                return;
+            }
+            viewState.activeDbId = db.id;
+            viewState.screen = 'db';
+            viewState.dbTab = 'visits';
+            viewState.visitFilterShopId = null;
+            render();
         }
 
         function applyUrlParams() {
@@ -1502,8 +1748,11 @@
                 }
                 const dbId = params.get('db');
                 if (dbId && sys.databases.some((d) => d.id === dbId)) {
-                    viewState.activeDbId = dbId;
-                    viewState.screen = 'db';
+                    const target = sys.databases.find((d) => d.id === dbId);
+                    if (canViewDbWithoutPrompt(target)) {
+                        viewState.activeDbId = dbId;
+                        viewState.screen = 'db';
+                    }
                 }
             } catch (_) {}
         }
@@ -1518,25 +1767,16 @@
                 if (!silent) toast('無効または期限切れの招待トークンです', true);
                 return false;
             }
-            hasValidInvite = true;
-            localStorage.setItem(INVITE_SESSION_KEY, 'true');
+            redeemedInviteToken = found.token;
+            localStorage.setItem(INVITE_SESSION_KEY, found.token);
             render();
-            if (!silent) toast(`招待「${found.label}」を適用し、書き込みユーザーになりました`);
+            if (!silent) toast(`招待「${found.label}」を適用しました`);
             return true;
         }
 
         function getActiveDb() {
             if (!viewState.activeDbId) return null;
             return sys.databases.find((d) => d.id === viewState.activeDbId) || null;
-        }
-
-        function canWriteCurrentDb() {
-            const r = getEffectiveRole();
-            return r === 'writer' || r === 'host';
-        }
-
-        function isHost() {
-            return getEffectiveRole() === 'host';
         }
 
         function getPeriodStart(period) {
@@ -1565,23 +1805,41 @@
             const pBtn = document.getElementById('headerPrimaryBtn');
             const pLbl = document.getElementById('headerPrimaryLabel');
             const lobbyCreateBtn = document.getElementById('lobbyCreateDbBtn');
+            const lobbyLimitNotice = document.getElementById('lobbyDbLimitNotice');
             const authBtnLbl = document.getElementById('headerAuthBtnLabel');
 
             if (role === 'host') {
                 badge.className = 'text-[10px] sm:text-xs font-black px-2.5 py-0.5 rounded-full shrink-0 bg-amber-400 text-ramen-black';
                 badge.innerHTML = '<i class="fa-solid fa-crown mr-1"></i>ホスト (Host)';
-                sub.textContent = `ログイン中 (${getCurrentUserLabel()})：全DB操作・ホスト設定・パッチ画面が利用可能`;
+                sub.textContent = `ホスト (${getCurrentUserLabel()})：全員のDB操作・消去・権限管理・選択項目追加・パッチDL可能`;
                 authBtnLbl.textContent = 'アカウント / 招待';
             } else if (role === 'writer') {
                 badge.className = 'text-[10px] sm:text-xs font-black px-2.5 py-0.5 rounded-full shrink-0 bg-emerald-500 text-white';
                 badge.innerHTML = '<i class="fa-solid fa-pen-to-square mr-1"></i>書き込みユーザー';
-                sub.textContent = `許可ユーザー (${getCurrentUserLabel()})：自分のDB作成＆店舗・訪問記録の追加・編集が可能`;
+                sub.textContent = `書き込みユーザー (${getCurrentUserLabel()})：許可されたDBのみ編集・自分のDB作成（1つまで）可能`;
                 authBtnLbl.textContent = 'アカウント / 招待';
             } else {
                 badge.className = 'text-[10px] sm:text-xs font-black px-2.5 py-0.5 rounded-full shrink-0 bg-sky-500 text-white';
                 badge.innerHTML = '<i class="fa-solid fa-eye mr-1"></i>閲覧者 (Viewer)';
-                sub.textContent = '閲覧専用（匿名接続）：ログイン不要で閲覧可能（追加・編集・ホスト機能は非表示）';
-                authBtnLbl.textContent = 'ログイン / 招待';
+                sub.textContent = currentAuthUser && !currentAuthUser.isAnonymous
+                    ? `ログイン中 (${getCurrentUserLabel()})：現在は閲覧者権限です（書き込みにはホストの許可が必要です）`
+                    : '閲覧専用（未ログイン閲覧可）：追加・編集・ホスト機能は非表示';
+                authBtnLbl.textContent = currentAuthUser && !currentAuthUser.isAnonymous ? 'アカウント状態' : 'ログイン / 招待';
+            }
+
+            // ロビーのDB作成ボタン制御（1人1つまで）
+            const ownedDb = getUserOwnedDb();
+            if (role === 'writer' || role === 'host') {
+                if (ownedDb) {
+                    lobbyCreateBtn.classList.add('hidden');
+                    lobbyLimitNotice.classList.remove('hidden');
+                } else {
+                    lobbyCreateBtn.classList.remove('hidden');
+                    lobbyLimitNotice.classList.add('hidden');
+                }
+            } else {
+                lobbyCreateBtn.classList.add('hidden');
+                lobbyLimitNotice.classList.add('hidden');
             }
 
             // モーダル内の認証表示更新
@@ -1591,31 +1849,43 @@
                 loggedInBox.classList.remove('hidden');
                 loginForm.classList.add('hidden');
                 document.getElementById('authLoggedInEmail').textContent = currentAuthUser.email;
-                document.getElementById('authLoggedInRoleTag').textContent = role === 'host' ? 'ホスト (Host)' : '書き込みユーザー (Writer)';
+                const roleTag = document.getElementById('authLoggedInRoleTag');
+                const roleHint = document.getElementById('authLoggedInRoleHint');
+                if (role === 'host') {
+                    roleTag.className = 'text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-400 text-ramen-black';
+                    roleTag.textContent = 'ホスト (Host)';
+                    roleHint.textContent = 'すべてのDBの閲覧・編集・消去とユーザー権限の管理が可能です。';
+                } else if (role === 'writer') {
+                    roleTag.className = 'text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-600 text-white';
+                    roleTag.textContent = '書き込みユーザー (Writer)';
+                    roleHint.textContent = '自分のDB（1つまで）の作成と、ホストに許可されたDBへの書き込みが可能です。';
+                } else {
+                    roleTag.className = 'text-[10px] font-black px-2 py-0.5 rounded-full bg-sky-600 text-white';
+                    roleTag.textContent = '閲覧者 (Viewer)';
+                    roleHint.textContent = '現在は閲覧専用です。書き込みを行うにはホストに書き込み権限の付与を依頼してください。';
+                }
             } else {
                 loggedInBox.classList.add('hidden');
                 loginForm.classList.remove('hidden');
             }
 
-            lobbyCreateBtn.classList.toggle('hidden', !canWriteCurrentDb());
-
+            const canWriteActive = canWriteCurrentDb();
             document.querySelectorAll('.writer-only-control').forEach((el) => {
                 if (el.id === 'mobileFabBtn') {
-                    el.classList.toggle('hidden', !(viewState.screen === 'db' && canWriteCurrentDb() && (viewState.dbTab === 'visits' || viewState.dbTab === 'shops')));
-                    if (viewState.screen === 'db' && canWriteCurrentDb() && (viewState.dbTab === 'visits' || viewState.dbTab === 'shops')) {
-                        el.classList.add('sm:hidden');
-                    }
+                    const showFab = viewState.screen === 'db' && canWriteActive && (viewState.dbTab === 'visits' || viewState.dbTab === 'shops');
+                    el.classList.toggle('hidden', !showFab);
+                    if (showFab) el.classList.add('sm:hidden');
                 } else {
-                    el.classList.toggle('hidden', !canWriteCurrentDb());
+                    el.classList.toggle('hidden', !canWriteActive);
                 }
             });
 
-            if (viewState.screen === 'db' && canWriteCurrentDb() && (viewState.dbTab === 'visits' || viewState.dbTab === 'shops')) {
+            if (viewState.screen === 'db' && canWriteActive && (viewState.dbTab === 'visits' || viewState.dbTab === 'shops')) {
                 pBtn.classList.remove('hidden');
                 pLbl.textContent = viewState.dbTab === 'visits' ? '訪問を記録' : '店舗を登録';
-            } else if (viewState.screen === 'lobby' && canWriteCurrentDb()) {
+            } else if (viewState.screen === 'lobby' && canCreateOwnDb()) {
                 pBtn.classList.remove('hidden');
-                pLbl.textContent = 'DBを作成';
+                pLbl.textContent = '自分のDBを作成';
             } else {
                 pBtn.classList.add('hidden');
             }
@@ -1625,21 +1895,36 @@
             const grid = document.getElementById('dbLobbyGrid');
             grid.innerHTML = '';
 
+            if (!sys.databases || sys.databases.length === 0) {
+                grid.innerHTML = `<div class="col-span-full bg-white rounded-3xl p-8 text-center border border-dashed border-stone-300 text-xs text-stone-500">登録されているラーメンDBがありません。</div>`;
+                return;
+            }
+
             sys.databases.forEach((db) => {
                 const visitCount = (db.visits || []).length;
                 const shopCount = (db.shops || []).length;
+                const hasPw = Boolean(db.viewPassword && String(db.viewPassword).trim() !== '');
+                const unlocked = canViewDbWithoutPrompt(db);
+                const writable = canWriteDb(db);
+
                 const card = document.createElement('article');
                 card.className = 'bg-white rounded-3xl p-5 shadow-sm hover:shadow-md border border-stone-200/90 flex flex-col justify-between space-y-4 transition';
 
                 card.innerHTML = `
                     <div class="space-y-2.5">
-                        <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center justify-between gap-2 flex-wrap">
                             <span class="text-[11px] font-bold bg-ramen-red text-white px-2.5 py-0.5 rounded-full">
                                 オーナー: ${esc(db.ownerName || '未設定')}
                             </span>
-                            <span class="text-[11px] font-bold bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full">
-                                ${db.visibility === 'public_read' ? '公開閲覧' : '招待/共有'}
-                            </span>
+                            <div class="flex items-center gap-1">
+                                ${hasPw
+                                    ? `<span class="text-[10px] font-bold ${unlocked ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'} px-2 py-0.5 rounded-full">
+                                           <i class="fa-solid ${unlocked ? 'fa-lock-open' : 'fa-lock'} mr-1"></i>${unlocked ? 'PW解除済' : '閲覧PWあり'}
+                                       </span>`
+                                    : `<span class="text-[10px] font-bold bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full">PWなし</span>`
+                                }
+                                ${writable ? `<span class="text-[10px] font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-full">編集可</span>` : ''}
+                            </div>
                         </div>
                         <h4 class="text-lg font-black text-ramen-black leading-snug">${esc(db.title)}</h4>
                         <p class="text-xs text-stone-600 leading-relaxed">${esc(db.description || 'ラーメンデータベース')}</p>
@@ -1649,10 +1934,17 @@
                             <span class="font-mono text-[11px] text-stone-400">v${esc(db.schemaVersion || '1.0.0')}</span>
                         </div>
                     </div>
-                    <button type="button" data-open-db="${esc(db.id)}" class="w-full py-2.5 bg-ramen-black hover:bg-ramen-red text-white rounded-xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2">
-                        <span>このDBを開く</span>
-                        <i class="fa-solid fa-arrow-right"></i>
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button type="button" data-open-db="${esc(db.id)}" class="flex-grow py-2.5 bg-ramen-black hover:bg-ramen-red text-white rounded-xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2">
+                            <i class="fa-solid ${hasPw && !unlocked ? 'fa-lock' : 'fa-door-open'}"></i>
+                            <span>${hasPw && !unlocked ? 'パスワードを入れて開く' : 'このDBを開く'}</span>
+                        </button>
+                        ${isHost() ? `
+                            <button type="button" data-lobby-del-db="${esc(db.id)}" class="p-2.5 bg-red-50 hover:bg-red-100 text-ramen-red border border-red-200 rounded-xl text-xs font-bold transition" title="ホスト権限でこのDBを消去">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        ` : ''}
+                    </div>
                 `;
                 grid.appendChild(card);
             });
@@ -1872,7 +2164,7 @@
                         </div>
                         <div class="pt-3 border-t border-stone-100 flex items-center justify-between gap-2">
                             <button type="button" data-open-shop-detail="${esc(shop.id)}" class="px-2.5 py-1.5 bg-ramen-cream hover:bg-amber-100 text-stone-800 border border-stone-200 rounded-xl text-xs font-bold">店舗詳細</button>
-                            ${canWriteCurrentDb() ? `
+                            ${canWriteDb(db) ? `
                                 <div class="flex items-center gap-1.5">
                                     <button type="button" data-edit-visit="${esc(visit.id)}" class="px-2.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-bold">編集</button>
                                     <button type="button" data-del-visit="${esc(visit.id)}" class="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-ramen-red rounded-xl text-xs font-bold"><i class="fa-solid fa-trash-can"></i></button>
@@ -2006,7 +2298,7 @@
                     </div>
                     <div class="pt-3 border-t border-stone-100 flex items-center justify-between gap-2">
                         <button type="button" data-open-shop-detail="${esc(shop.id)}" class="py-2 px-3 bg-ramen-cream hover:bg-amber-100 text-ramen-black border border-stone-300 rounded-xl text-xs font-bold">詳細・メニュー・コール</button>
-                        ${canWriteCurrentDb() ? `
+                        ${canWriteDb(db) ? `
                             <div class="flex items-center gap-1.5">
                                 <button type="button" data-quick-visit-shop="${esc(shop.id)}" class="px-2.5 py-2 bg-ramen-red hover:bg-red-600 text-white rounded-xl text-xs font-bold">+ 訪問</button>
                                 <button type="button" data-edit-shop="${esc(shop.id)}" class="p-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-bold"><i class="fa-solid fa-pen"></i></button>
@@ -2020,6 +2312,57 @@
         }
 
         function renderHostView(db) {
+            // 0. 登録アカウントのロール＆DB別書き込み許可一覧
+            const usersBox = document.getElementById('registeredUsersManagerList');
+            const users = sys.users || [];
+            if (users.length === 0) {
+                usersBox.innerHTML = `<p class="text-xs text-stone-400">登録済みユーザーはまだいません。</p>`;
+            } else {
+                usersBox.innerHTML = users.map((u) => {
+                    const isPrimaryHost = sys.hostEmail && u.email && sys.hostEmail.toLowerCase() === u.email.toLowerCase();
+                    const allowedSet = new Set(u.allowedDbIds || []);
+                    const dbCheckboxes = (sys.databases || []).map((targetDb) => {
+                        const isOwner = (targetDb.ownerUid && targetDb.ownerUid === u.uid) || (targetDb.ownerEmail && u.email && targetDb.ownerEmail.toLowerCase() === u.email.toLowerCase());
+                        const checked = isOwner || allowedSet.has(targetDb.id);
+                        return `
+                            <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-bold ${checked ? 'bg-emerald-50 border-emerald-300 text-emerald-950' : 'bg-white border-stone-200 text-stone-600'} ${isOwner || u.role !== 'writer' ? 'opacity-70' : 'cursor-pointer'}">
+                                <input type="checkbox" data-user-db-perm="${esc(u.uid)}" data-target-db="${esc(targetDb.id)}" ${checked ? 'checked' : ''} ${isOwner || u.role !== 'writer' ? 'disabled' : ''}>
+                                <span>${esc(targetDb.title)}${isOwner ? ' (本人作成DB)' : ''}</span>
+                            </label>
+                        `;
+                    }).join('');
+
+                    return `
+                        <div class="p-3.5 rounded-2xl bg-stone-50 border border-stone-200 space-y-2.5 text-xs">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                <div class="min-w-0">
+                                    <p class="font-mono font-black text-ramen-black break-all">${esc(u.email)}</p>
+                                    <p class="text-[10px] text-stone-400">UID: ${esc(u.uid || '-')}</p>
+                                </div>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <select data-user-role-select="${esc(u.uid)}" ${isPrimaryHost ? 'disabled' : ''} class="px-3 py-1.5 bg-white border border-stone-300 rounded-xl font-bold text-xs">
+                                        <option value="viewer" ${u.role === 'viewer' ? 'selected' : ''}>閲覧者 (Viewer)</option>
+                                        <option value="writer" ${u.role === 'writer' ? 'selected' : ''}>書き込みユーザー (Writer)</option>
+                                        <option value="host" ${u.role === 'host' ? 'selected' : ''}>ホスト (Host)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            ${u.role === 'writer' ? `
+                                <div class="pt-2 border-t border-stone-200/80 space-y-1">
+                                    <span class="text-[10px] font-black text-stone-500 block">書き込みを許可するDB（チェックしたDB＋本人作成DBのみ書き込み可能）:</span>
+                                    <div class="flex flex-wrap gap-1.5">${dbCheckboxes}</div>
+                                </div>
+                            ` : u.role === 'host' ? `
+                                <p class="text-[11px] text-amber-800 font-bold"><i class="fa-solid fa-crown mr-1"></i>ホストは全DBに対して無条件閲覧・書き込み・消去が可能です。</p>
+                            ` : `
+                                <p class="text-[11px] text-stone-500">閲覧者権限のため書き込みは不可です。許可する場合は「書き込みユーザー」へ切り替えてください。</p>
+                            `}
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // 1. カスタム項目
             const cfList = document.getElementById('customFieldsList');
             if (!sys.customFields || sys.customFields.length === 0) {
                 cfList.innerHTML = `<p class="text-xs text-stone-400">追加されたカスタム項目はありません。</p>`;
@@ -2036,6 +2379,7 @@
                 `).join('');
             }
 
+            // 2. 分類マスタ（選択項目）
             document.querySelectorAll('#hostClassCatTabs .hcat-btn').forEach((btn) => {
                 const active = btn.dataset.hcat === viewState.hostClassCat;
                 btn.className = active
@@ -2050,18 +2394,12 @@
                 </span>
             `).join('');
 
+            // 3. 対象DB設定
             document.getElementById('hostDbNameInput').value = db.title || '';
             document.getElementById('hostDbDescInput').value = db.description || '';
+            document.getElementById('hostDbViewPasswordInput').value = db.viewPassword || '';
             document.getElementById('hostDbVisibilitySelect').value = db.visibility || 'public_read';
             document.getElementById('hostSchemaVersionInput').value = db.schemaVersion || '1.0.0';
-            document.getElementById('hostEmailDisplay').textContent = sys.hostEmail || '未設定';
-
-            document.getElementById('writersList').innerHTML = (sys.writers || []).map((w) => `
-                <div class="flex items-center justify-between bg-stone-50 px-3 py-2 rounded-xl border border-stone-200 text-xs">
-                    <span class="font-bold text-ramen-black"><i class="fa-solid fa-user text-stone-400 mr-1.5"></i>${esc(w.name)}</span>
-                    <button type="button" data-del-writer="${esc(w.id)}" class="text-red-600 font-bold hover:underline">解除</button>
-                </div>
-            `).join('');
 
             document.getElementById('invitesList').innerHTML = (sys.invites || []).map((inv) => {
                 const shareUrl = `${window.location.origin}${window.location.pathname}?db=${encodeURIComponent(db.id)}&invite=${encodeURIComponent(inv.token)}`;
@@ -2130,7 +2468,7 @@
             renderHeaderAndRole();
 
             const db = getActiveDb();
-            if (viewState.screen !== 'db' || !db) {
+            if (viewState.screen !== 'db' || !db || !canViewDbWithoutPrompt(db)) {
                 viewState.screen = 'lobby';
                 document.getElementById('lobbyView').classList.remove('hidden');
                 document.getElementById('dbWorkspaceView').classList.add('hidden');
@@ -2151,18 +2489,27 @@
             document.getElementById('activeDbVisibilityBadge').textContent = db.visibility === 'public_read' ? '公開閲覧可' : '招待/共有';
             document.getElementById('activeDbSchemaBadge').textContent = `schema v${db.schemaVersion || '1.0.0'}`;
 
-            const role = getEffectiveRole();
+            const hasPw = Boolean(db.viewPassword && String(db.viewPassword).trim() !== '');
+            document.getElementById('activeDbPasswordBadge').classList.toggle('hidden', !hasPw);
+
+            const writable = canWriteDb(db);
             const permPill = document.getElementById('activeDbPermissionPill');
-            if (role === 'host') {
+            if (isHost()) {
                 permPill.className = 'text-xs font-black px-3 py-1.5 rounded-xl bg-amber-100 text-amber-950 border border-amber-300';
-                permPill.textContent = '権限: ホスト（全操作・設定・パッチ可）';
-            } else if (role === 'writer') {
+                permPill.textContent = '権限: ホスト（全DB閲覧・編集・消去可）';
+            } else if (writable) {
                 permPill.className = 'text-xs font-black px-3 py-1.5 rounded-xl bg-emerald-100 text-emerald-900 border border-emerald-300';
-                permPill.textContent = '権限: 書き込みユーザー（追加・編集可）';
+                permPill.textContent = '権限: このDBの書き込み許可あり';
             } else {
                 permPill.className = 'text-xs font-black px-3 py-1.5 rounded-xl bg-sky-100 text-sky-900 border border-sky-300';
-                permPill.textContent = '権限: 閲覧者（閲覧専用）';
+                permPill.textContent = '権限: 閲覧専用（このDBへの書き込み権限なし）';
             }
+
+            // DB設定・閲覧PWボタン（ホストまたはそのDBの作成者本人）
+            const isOwnerOfThisDb = currentAuthUser && !currentAuthUser.isAnonymous &&
+                ((db.ownerUid && db.ownerUid === currentAuthUser.uid) || (db.ownerEmail && currentAuthUser.email && db.ownerEmail.toLowerCase() === currentAuthUser.email.toLowerCase()));
+            document.getElementById('openDbSettingsModalBtn').classList.toggle('hidden', !(isHost() || isOwnerOfThisDb));
+            document.getElementById('deleteCurrentDbBtn').classList.toggle('hidden', !isHost());
 
             const hostTab = document.getElementById('navTabHostBtn');
             const patchTab = document.getElementById('navTabPatchBtn');
@@ -2391,7 +2738,7 @@
 
         function openVisitModal({ editVisit = null, preselectedShopId = null } = {}) {
             if (!canWriteCurrentDb()) {
-                toast('書き込み権限がありません', true);
+                toast('このDBへの書き込み権限がありません', true);
                 return;
             }
             document.getElementById('visitForm').reset();
@@ -2503,7 +2850,7 @@
 
         function openShopModal({ editShop = null, returnToVisit = false } = {}) {
             if (!canWriteCurrentDb()) {
-                toast('書き込み権限がありません', true);
+                toast('このDBへの書き込み権限がありません', true);
                 return;
             }
             document.getElementById('shopForm').reset();
@@ -2587,6 +2934,18 @@
                 reader.onerror = reject;
                 reader.readAsDataURL(file);
             });
+        }
+
+        function downloadJsonFile(obj, filename) {
+            const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
 
         async function runPatchOnActiveDb(patchObj) {
@@ -2673,6 +3032,15 @@
                     customValues: {}
                 });
             } else {
+                if (patchObj.classifications && typeof patchObj.classifications === 'object') {
+                    Object.keys(patchObj.classifications).forEach((cat) => {
+                        if (Array.isArray(sys.classifications[cat]) && Array.isArray(patchObj.classifications[cat])) {
+                            patchObj.classifications[cat].forEach((item) => {
+                                if (!sys.classifications[cat].includes(item)) sys.classifications[cat].push(item);
+                            });
+                        }
+                    });
+                }
                 if (patchObj.defaultGenre) {
                     db.shops = (db.shops || []).map((s) => Object.assign({}, s, { genre: s.genre || patchObj.defaultGenre }));
                 }
@@ -2697,6 +3065,25 @@
             toast(`パッチ「${title}」を適用しました`);
         }
 
+        function deleteDatabaseById(dbId) {
+            if (!isHost()) {
+                toast('DBの消去はホストのみ実行できます', true);
+                return;
+            }
+            const target = sys.databases.find((d) => d.id === dbId);
+            if (!target) return;
+            askConfirm('データベースの完全消去', `「${target.title}」と登録済みの店舗・訪問履歴を完全に消去しますか？この操作は元に戻せません。`, async () => {
+                sys.databases = sys.databases.filter((d) => d.id !== dbId);
+                if (viewState.activeDbId === dbId) {
+                    viewState.activeDbId = null;
+                    viewState.screen = 'lobby';
+                }
+                await saveSystem();
+                render();
+                toast(`「${target.title}」を消去しました`);
+            });
+        }
+
         function bindEvents() {
             // 認証・招待モーダル
             document.getElementById('openInviteModalBtn').addEventListener('click', () => {
@@ -2718,11 +3105,8 @@
                 const pass = document.getElementById('authPasswordInput').value;
                 if (!email || !pass) return;
                 try {
-                    await signInWithEmailAndPassword(auth, email, pass);
-                    if (!sys.hostEmail) {
-                        sys.hostEmail = email;
-                        await saveSystem();
-                    }
+                    const cred = await signInWithEmailAndPassword(auth, email, pass);
+                    await ensureUserRegisteredInSystem(cred.user);
                     document.getElementById('inviteRoleModal').classList.add('hidden');
                     toast('ログインしました');
                 } catch (err) {
@@ -2730,7 +3114,7 @@
                 }
             });
 
-            // 新規アカウント登録
+            // 新規アカウント登録（2人目以降は必ずviewer＝閲覧者になる）
             document.getElementById('authRegisterBtn').addEventListener('click', async () => {
                 const email = document.getElementById('authEmailInput').value.trim();
                 const pass = document.getElementById('authPasswordInput').value;
@@ -2739,15 +3123,15 @@
                     return;
                 }
                 try {
-                    await createUserWithEmailAndPassword(auth, email, pass);
-                    if (!sys.hostEmail) {
-                        sys.hostEmail = email;
-                        await saveSystem();
+                    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+                    await ensureUserRegisteredInSystem(cred.user);
+                    const role = getEffectiveRole();
+                    document.getElementById('inviteRoleModal').classList.add('hidden');
+                    if (role === 'host') {
                         toast('ホストアカウントとして登録しました');
                     } else {
-                        toast('書き込みユーザーとして登録しました');
+                        toast('閲覧者アカウントとして登録しました（書き込みにはホストの許可が必要です）');
                     }
-                    document.getElementById('inviteRoleModal').classList.add('hidden');
                 } catch (err) {
                     toast(`登録失敗: ${err.message}`, true);
                 }
@@ -2757,11 +3141,11 @@
             document.getElementById('authLogoutBtn').addEventListener('click', async () => {
                 try {
                     await signOut(auth);
-                    hasValidInvite = false;
+                    redeemedInviteToken = '';
                     localStorage.removeItem(INVITE_SESSION_KEY);
                     await signInAnonymously(auth);
                     document.getElementById('inviteRoleModal').classList.add('hidden');
-                    toast('ログアウトし、閲覧者（匿名）に戻りました');
+                    toast('ログアウトし、閲覧者に戻りました');
                 } catch (err) {
                     toast(`ログアウトエラー: ${err.message}`, true);
                 }
@@ -2787,19 +3171,47 @@
             document.getElementById('backToLobbyBtn').addEventListener('click', backLobby);
 
             document.getElementById('dbLobbyGrid').addEventListener('click', (e) => {
+                const delBtn = e.target.closest('[data-lobby-del-db]');
+                if (delBtn) {
+                    deleteDatabaseById(delBtn.dataset.lobbyDelDb);
+                    return;
+                }
                 const btn = e.target.closest('[data-open-db]');
                 if (!btn) return;
-                viewState.activeDbId = btn.dataset.openDb;
-                viewState.screen = 'db';
-                viewState.dbTab = 'visits';
-                viewState.visitFilterShopId = null;
-                render();
+                requestOpenDb(btn.dataset.openDb);
             });
 
-            // 新規DB作成
+            // 閲覧パスワード解除モーダル
+            document.getElementById('closeDbPasswordModalBtn').addEventListener('click', () => document.getElementById('dbPasswordModal').classList.add('hidden'));
+            document.getElementById('cancelDbPasswordBtn').addEventListener('click', () => document.getElementById('dbPasswordModal').classList.add('hidden'));
+            document.getElementById('dbPasswordForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const dbId = document.getElementById('targetLockedDbId').value;
+                const pw = document.getElementById('dbUnlockPasswordInput').value;
+                const target = sys.databases.find((d) => d.id === dbId);
+                if (!target) return;
+                if (String(target.viewPassword || '') === String(pw)) {
+                    unlockedDbSessionSet.add(dbId);
+                    try { sessionStorage.setItem(UNLOCKED_DBS_SESSION_KEY, JSON.stringify([...unlockedDbSessionSet])); } catch (_) {}
+                    document.getElementById('dbPasswordModal').classList.add('hidden');
+                    viewState.activeDbId = dbId;
+                    viewState.screen = 'db';
+                    viewState.dbTab = 'visits';
+                    render();
+                    toast('閲覧パスワードを解除しました');
+                } else {
+                    toast('パスワードが一致しません', true);
+                }
+            });
+
+            // 新規DB作成（1人1つまで）
             const openCreateDb = () => {
-                if (!canWriteCurrentDb()) {
-                    toast('書き込みユーザーまたはホストのみDBを作成できます', true);
+                if (!canCreateOwnDb()) {
+                    if (getUserOwnedDb()) {
+                        toast('自分のDBは1人1つまで作成可能です', true);
+                    } else {
+                        toast('書き込みユーザー権限が必要です', true);
+                    }
                     return;
                 }
                 document.getElementById('createDbForm').reset();
@@ -2810,22 +3222,30 @@
             document.getElementById('cancelCreateDbBtn').addEventListener('click', () => document.getElementById('createDbModal').classList.add('hidden'));
             document.getElementById('createDbForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
+                if (!canCreateOwnDb()) return;
                 const title = document.getElementById('newDbTitleInput').value.trim();
                 if (!title) return;
                 const newId = `db-${Date.now()}`;
+                const viewPassword = document.getElementById('newDbViewPasswordInput').value.trim();
                 sys.databases.unshift({
                     id: newId,
                     title,
-                    ownerName: document.getElementById('newDbOwnerInput').value.trim() || getCurrentUserLabel(),
+                    ownerName: document.getElementById('newDbOwnerInput').value.trim() || getCurrentUserLabel().split('@')[0],
+                    ownerUid: currentAuthUser ? currentAuthUser.uid : '',
+                    ownerEmail: currentAuthUser ? (currentAuthUser.email || '') : '',
+                    viewPassword,
                     description: document.getElementById('newDbDescInput').value.trim(),
                     visibility: 'public_read',
                     schemaVersion: '1.0.0',
-                    allowedWriters: [],
                     shops: [],
                     visits: [],
                     patchHistory: [],
                     lastSnapshot: null
                 });
+                if (viewPassword) {
+                    unlockedDbSessionSet.add(newId);
+                    try { sessionStorage.setItem(UNLOCKED_DBS_SESSION_KEY, JSON.stringify([...unlockedDbSessionSet])); } catch (_) {}
+                }
                 await saveSystem();
                 document.getElementById('createDbModal').classList.add('hidden');
                 viewState.activeDbId = newId;
@@ -2833,6 +3253,40 @@
                 viewState.dbTab = 'visits';
                 render();
                 toast(`「${title}」を作成しました`);
+            });
+
+            // DB別設定・閲覧パスワード変更モーダル
+            document.getElementById('openDbSettingsModalBtn').addEventListener('click', () => {
+                const db = getActiveDb();
+                if (!db) return;
+                document.getElementById('editDbTitleInput').value = db.title || '';
+                document.getElementById('editDbDescInput').value = db.description || '';
+                document.getElementById('editDbViewPasswordInput').value = db.viewPassword || '';
+                document.getElementById('dbOwnerSettingsModal').classList.remove('hidden');
+            });
+            document.getElementById('closeDbOwnerSettingsBtn').addEventListener('click', () => document.getElementById('dbOwnerSettingsModal').classList.add('hidden'));
+            document.getElementById('cancelDbOwnerSettingsBtn').addEventListener('click', () => document.getElementById('dbOwnerSettingsModal').classList.add('hidden'));
+            document.getElementById('dbOwnerSettingsForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const db = getActiveDb();
+                if (!db) return;
+                db.title = document.getElementById('editDbTitleInput').value.trim() || db.title;
+                db.description = document.getElementById('editDbDescInput').value.trim();
+                db.viewPassword = document.getElementById('editDbViewPasswordInput').value.trim();
+                await saveSystem();
+                document.getElementById('dbOwnerSettingsModal').classList.add('hidden');
+                render();
+                toast('DB設定・閲覧パスワードを保存しました');
+            });
+
+            // ホストによるDB消去ボタン
+            document.getElementById('deleteCurrentDbBtn').addEventListener('click', () => {
+                const db = getActiveDb();
+                if (db) deleteDatabaseById(db.id);
+            });
+            document.getElementById('hostDeleteThisDbBtn').addEventListener('click', () => {
+                const db = getActiveDb();
+                if (db) deleteDatabaseById(db.id);
             });
 
             const triggerMainAdd = () => {
@@ -3166,7 +3620,41 @@
 
             document.getElementById('closeShopDetailBtn').addEventListener('click', () => document.getElementById('shopDetailModal').classList.add('hidden'));
 
-            // ホスト設定操作
+            // ホスト設定：ユーザーロール＆DB別書き込み許可管理
+            document.getElementById('registeredUsersManagerList').addEventListener('change', async (e) => {
+                if (!isHost()) return;
+                const roleSel = e.target.closest('[data-user-role-select]');
+                if (roleSel) {
+                    const targetUid = roleSel.dataset.userRoleSelect;
+                    const u = (sys.users || []).find((x) => x.uid === targetUid);
+                    if (u) {
+                        u.role = roleSel.value;
+                        await saveSystem();
+                        render();
+                        toast(`${u.email} の権限を「${roleSel.value}」に変更しました`);
+                    }
+                    return;
+                }
+                const dbCb = e.target.closest('[data-user-db-perm]');
+                if (dbCb) {
+                    const targetUid = dbCb.dataset.userDbPerm;
+                    const targetDbId = dbCb.dataset.targetDb;
+                    const u = (sys.users || []).find((x) => x.uid === targetUid);
+                    if (u) {
+                        u.allowedDbIds = Array.isArray(u.allowedDbIds) ? u.allowedDbIds : [];
+                        if (dbCb.checked) {
+                            if (!u.allowedDbIds.includes(targetDbId)) u.allowedDbIds.push(targetDbId);
+                        } else {
+                            u.allowedDbIds = u.allowedDbIds.filter((id) => id !== targetDbId);
+                        }
+                        await saveSystem();
+                        render();
+                        toast('書き込み許可DBを更新しました');
+                    }
+                }
+            });
+
+            // ホスト設定：カスタム項目＆選択項目追加
             document.getElementById('addCustomFieldForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 if (!isHost()) return;
@@ -3214,7 +3702,7 @@
                 inp.value = '';
                 await saveSystem();
                 render();
-                toast(`「${val}」を追加しました`);
+                toast(`選択項目「${val}」を追加しました`);
             });
 
             document.getElementById('hostClassItemsList').addEventListener('click', async (e) => {
@@ -3223,7 +3711,7 @@
                 sys.classifications[viewState.hostClassCat].splice(Number(b.dataset.delHclass), 1);
                 await saveSystem();
                 render();
-                toast('選択肢を削除しました');
+                toast('選択項目を削除しました');
             });
 
             document.getElementById('hostFundamentalForm').addEventListener('submit', async (e) => {
@@ -3232,41 +3720,23 @@
                 if (!db || !isHost()) return;
                 db.title = document.getElementById('hostDbNameInput').value.trim() || db.title;
                 db.description = document.getElementById('hostDbDescInput').value.trim();
+                db.viewPassword = document.getElementById('hostDbViewPasswordInput').value.trim();
                 db.visibility = document.getElementById('hostDbVisibilitySelect').value;
                 db.schemaVersion = document.getElementById('hostSchemaVersionInput').value.trim() || '1.0.0';
                 await saveSystem();
                 render();
-                toast('根本設定を保存しました');
-            });
-
-            document.getElementById('addWriterForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                if (!isHost()) return;
-                const inp = document.getElementById('newWriterNameInput');
-                const name = inp.value.trim();
-                if (!name) return;
-                sys.writers.push({ id: `w-${Date.now()}`, name, canCreateOwnDb: true });
-                inp.value = '';
-                await saveSystem();
-                render();
-                toast(`「${name}」を書き込みユーザーに追加しました`);
-            });
-
-            document.getElementById('writersList').addEventListener('click', async (e) => {
-                const b = e.target.closest('[data-del-writer]');
-                if (!b || !isHost()) return;
-                sys.writers = sys.writers.filter((w) => w.id !== b.dataset.delWriter);
-                await saveSystem();
-                render();
+                toast('DB設定・閲覧パスワードを保存しました');
             });
 
             document.getElementById('generateInviteBtn').addEventListener('click', async () => {
-                if (!isHost()) return;
+                const db = getActiveDb();
+                if (!isHost() || !db) return;
                 const token = `INV-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
                 sys.invites.unshift({
                     token,
-                    label: `書き込み招待 (${daysAgo(0)})`,
+                    label: `${db.title} 書き込み招待 (${daysAgo(0)})`,
                     active: true,
+                    allowedDbIds: [db.id],
                     createdAt: daysAgo(0)
                 });
                 await saveSystem();
@@ -3294,15 +3764,7 @@
             });
 
             document.getElementById('hostExportAllBtn').addEventListener('click', () => {
-                const blob = new Blob([JSON.stringify(sys, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `my_ramen_db_system_${daysAgo(0)}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
+                downloadJsonFile(sys, `my_ramen_db_system_${daysAgo(0)}.json`);
                 toast('全体JSONをダウンロードしました');
             });
 
@@ -3330,7 +3792,56 @@
                 reader.readAsText(f);
             });
 
-            // パッチ画面操作
+            // パッチ画面操作（パッチ適用＆パッチJSONダウンロード）
+            document.getElementById('downloadDbPatchBtn').addEventListener('click', () => {
+                const db = getActiveDb();
+                if (!db || !isHost()) return;
+                const patchPayload = {
+                    patchId: `patch-${db.id}-${daysAgo(0)}`,
+                    title: `${db.title} 構成・選択項目パッチ`,
+                    schemaVersion: db.schemaVersion || '1.0.0',
+                    exportedAt: new Date().toISOString(),
+                    classifications: clone(sys.classifications),
+                    customFields: clone(sys.customFields),
+                    targetDbSnapshot: {
+                        id: db.id,
+                        title: db.title,
+                        shopsCount: (db.shops || []).length,
+                        visitsCount: (db.visits || []).length
+                    }
+                };
+                downloadJsonFile(patchPayload, `ramen_patch_${db.id}_${daysAgo(0)}.json`);
+                toast('パッチJSONファイルをダウンロードしました');
+            });
+
+            document.getElementById('downloadCustomPatchTextareaBtn').addEventListener('click', () => {
+                if (!isHost()) return;
+                const raw = document.getElementById('customPatchJsonInput').value.trim();
+                if (!raw) {
+                    toast('ダウンロードするパッチJSONを入力してください', true);
+                    return;
+                }
+                try {
+                    const parsed = JSON.parse(raw);
+                    downloadJsonFile(parsed, `${parsed.patchId || 'custom_patch'}_${daysAgo(0)}.json`);
+                    toast('パッチJSONをダウンロードしました');
+                } catch (err) {
+                    toast(`JSON形式エラー: ${err.message}`, true);
+                }
+            });
+
+            document.getElementById('loadPatchFileInput').addEventListener('change', (e) => {
+                const f = e.target.files && e.target.files[0];
+                if (!f) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    document.getElementById('customPatchJsonInput').value = ev.target.result;
+                    toast('パッチJSONファイルを読み込みました');
+                    e.target.value = '';
+                };
+                reader.readAsText(f);
+            });
+
             document.querySelectorAll('[data-preset-patch]').forEach((btn) => {
                 btn.addEventListener('click', () => {
                     const pid = btn.dataset.presetPatch;
@@ -3397,6 +3908,8 @@
                     } catch (e) {
                         console.error('匿名ログインエラー:', e);
                     }
+                } else if (!user.isAnonymous && user.email) {
+                    await ensureUserRegisteredInSystem(user);
                 }
                 render();
             });
@@ -3407,11 +3920,13 @@
                 async (snap) => {
                     if (snap.exists()) {
                         mergeSystemPayload(snap.data());
+                        if (currentAuthUser && !currentAuthUser.isAnonymous) {
+                            await ensureUserRegisteredInSystem(currentAuthUser);
+                        }
                         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(sys)); } catch (_) {}
                         setSyncStatus('synced', 'クラウド同期済');
                         render();
                     } else {
-                        // 初回起動時は現在のデータをFirestoreに初期保存
                         await saveSystem();
                     }
                 },
