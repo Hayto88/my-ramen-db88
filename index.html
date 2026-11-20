@@ -669,6 +669,55 @@
                         </button>
                     </div>
                 </div>
+                <!-- カスタムJSパッチ適用＆保存 -->
+                <div class="bg-white rounded-3xl p-5 shadow-sm border border-stone-200/90 space-y-3">
+                    <div class="flex items-center justify-between flex-wrap gap-2">
+                        <div>
+                            <h4 class="text-base font-black text-ramen-black">カスタムJSパッチ適用＆クラウド保存</h4>
+                            <p class="text-xs text-stone-500 mt-0.5">
+                                関数本体として実行されます。<code>ctx</code>（<code>sys</code>, <code>db</code>, <code>viewState</code>, <code>toast</code>, <code>saveSystem</code>, <code>render</code>, <code>esc</code>, <code>clone</code>, <code>daysAgo</code>）を利用できます。
+                            </p>
+                        </div>
+                        <label class="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 border border-stone-300 rounded-xl text-xs font-bold cursor-pointer">
+                            <i class="fa-solid fa-file-code mr-1 text-emerald-700"></i>JS / パッチJSONを読込
+                            <input id="loadJsPatchFileInput" type="file" accept=".js,.json,.txt,application/json,text/javascript" class="hidden">
+                        </label>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <div>
+                            <label for="jsPatchIdInput" class="block font-bold text-stone-700 mb-1">パッチID（任意）</label>
+                            <input id="jsPatchIdInput" type="text" placeholder="例: js-patch-badge-01" class="w-full px-3 py-2 bg-ramen-cream/60 border border-stone-300 rounded-xl font-mono">
+                        </div>
+                        <div>
+                            <label for="jsPatchTitleInput" class="block font-bold text-stone-700 mb-1">パッチ名（任意）</label>
+                            <input id="jsPatchTitleInput" type="text" placeholder="例: ヘッダーに補足バッジ追加" class="w-full px-3 py-2 bg-ramen-cream/60 border border-stone-300 rounded-xl font-bold">
+                        </div>
+                    </div>
+
+                    <textarea id="customJsPatchCodeInput" rows="6" placeholder="// 例: ctx.toast('JSパッチテスト成功！');" class="w-full p-3 bg-stone-900 text-amber-300 font-mono text-xs rounded-2xl border border-stone-700 focus:outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
+
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                        <label class="inline-flex items-center gap-2 text-xs font-bold text-stone-700 cursor-pointer select-none">
+                            <input id="jsPatchPersistCheckbox" type="checkbox" checked class="rounded border-stone-300 text-emerald-600 focus:ring-emerald-500">
+                            <span>クラウドに保存して画面描画時に自動適用する</span>
+                        </label>
+
+                        <div class="flex flex-wrap justify-end gap-2">
+                            <button id="downloadJsPatchBtn" type="button" class="px-4 py-2.5 bg-stone-800 hover:bg-stone-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-2">
+                                <i class="fa-solid fa-download"></i><span>JSパッチJSONをDL</span>
+                            </button>
+                            <button id="applyJsPatchBtn" type="button" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-2">
+                                <i class="fa-solid fa-code"></i><span>JSパッチを実行</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="pt-3 border-t border-stone-100 space-y-2">
+                        <h5 class="text-xs font-black text-ramen-black">クラウド保存済みJSパッチ一覧</h5>
+                        <div id="installedJsPatchesList" class="space-y-2 text-xs"></div>
+                    </div>
+                </div>
 
                 <!-- パッチ適用履歴 -->
                 <div class="bg-white rounded-3xl p-5 shadow-sm border border-stone-200/90 space-y-3">
