@@ -128,7 +128,7 @@
                         <p class="text-xs sm:text-sm text-stone-600 leading-relaxed">
                             URLを知っている方は<strong>ログイン不要で閲覧</strong>できます（閲覧パスワード設定DBはパスワード入力で閲覧可）。
                             <strong>新規登録はホスト発行の登録トークン（REG-）が必要</strong>で、登録直後は<strong>閲覧者</strong>になります。
-                            <strong>書き込みユーザー</strong>は自分のDB（1人1つまで）の作成・編集・削除と許可DBへの書き込みが可能、<strong>ホスト</strong>は全DBの管理・削除と機能パッチ導入が可能です。
+                            <strong>書き込みユーザー</strong>は自分のDB（1人1つまで）の作成・編集・削除と許可DBへの書き込みが可能、<strong>ホスト</strong>は全DBの管理・削除とJS機能パッチ導入が可能です。
                         </p>
                     </div>
                     <div class="flex flex-wrap gap-2 shrink-0 items-center">
@@ -145,6 +145,24 @@
                         </button>
                     </div>
                 </div>
+
+                <!-- ロビー用パッチノート -->
+                <div id="lobbyPatchNotesCard" class="rounded-2xl bg-ramen-cream/70 border border-stone-200/90 p-4 space-y-2.5">
+                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-black text-ramen-black flex items-center gap-1.5">
+                                <i class="fa-solid fa-scroll text-ramen-red"></i>
+                                <span>ロビー パッチノート</span>
+                            </span>
+                            <span id="lobbyPatchNotesCountBadge" class="text-[10px] font-bold bg-white text-stone-700 border border-stone-200 px-2 py-0.5 rounded-full">0件</span>
+                        </div>
+                        <span class="text-[11px] text-stone-500">JS機能パッチ・システム更新の履歴</span>
+                    </div>
+                    <div id="lobbyPatchNotesList" class="space-y-1.5 max-h-40 overflow-y-auto text-xs"></div>
+                </div>
+
+                <!-- JS機能パッチでロビー上部/下部に描画できる拡張スロット -->
+                <div id="patchLobbySlot" class="hidden space-y-2"></div>
 
                 <!-- 3ロール概要カード -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
@@ -165,9 +183,9 @@
                     <div class="p-3.5 rounded-2xl bg-red-50/70 border border-red-200/80 space-y-1">
                         <div class="flex items-center justify-between">
                             <span class="text-xs font-black text-ramen-darkRed"><i class="fa-solid fa-crown mr-1.5"></i>ホスト (Host)</span>
-                            <span class="text-[10px] font-bold bg-red-100 text-ramen-red px-2 py-0.5 rounded-full">完全権限・パッチ導入</span>
+                            <span class="text-[10px] font-bold bg-red-100 text-ramen-red px-2 py-0.5 rounded-full">完全権限・JSパッチ</span>
                         </div>
-                        <p class="text-[11px] text-red-950/80">全DBの閲覧・編集・削除、登録トークン発行、権限管理、機能アップデートパッチ導入が可能です。</p>
+                        <p class="text-[11px] text-red-950/80">全DBの閲覧・編集・削除、登録トークン発行・消去、権限管理、JS機能パッチ導入が可能です。</p>
                     </div>
                 </div>
             </div>
@@ -281,7 +299,7 @@
                     </div>
                 </div>
 
-                <!-- 機能パッチで注入可能な追加ダッシュボード領域 -->
+                <!-- JS機能パッチで注入可能な追加ダッシュボード領域 -->
                 <div id="patchExtraDashboardSlot" class="hidden space-y-3"></div>
             </div>
 
@@ -415,7 +433,7 @@
                     <div>
                         <span class="text-[11px] font-black bg-amber-400 text-ramen-black px-2.5 py-0.5 rounded-full">HOST ONLY</span>
                         <h3 class="text-lg sm:text-xl font-black mt-1.5"><i class="fa-solid fa-crown text-amber-400 mr-2"></i>ホスト専用コントロールパネル</h3>
-                        <p class="text-xs text-stone-300 mt-0.5">新規登録トークン（REG-）発行・ユーザー権限管理・DB別書き込み許可・閲覧パスワード設定・選択項目追加・DB消去・バックアップを管理します。</p>
+                        <p class="text-xs text-stone-300 mt-0.5">新規登録トークン（REG-）発行・消去・ユーザー権限管理・DB別書き込み許可・閲覧パスワード設定・選択項目追加・DB消去・バックアップを管理します。</p>
                     </div>
                 </div>
 
@@ -496,7 +514,7 @@
                     <div id="hostClassItemsList" class="flex flex-wrap gap-2"></div>
                 </div>
 
-                <!-- 3. 対象DB根本設定・閲覧パスワード・消去＆招待/登録トークン発行 -->
+                <!-- 3. 対象DB根本設定・閲覧パスワード・消去＆招待/登録トークン発行・消去 -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
                     <div class="bg-white rounded-3xl p-5 shadow-sm border border-stone-200/90 space-y-4">
                         <h4 class="text-base font-black text-ramen-black flex items-center gap-2 border-b border-stone-100 pb-2">
@@ -545,12 +563,12 @@
                     <div class="bg-white rounded-3xl p-5 shadow-sm border border-stone-200/90 space-y-4">
                         <h4 class="text-base font-black text-ramen-black flex items-center gap-2 border-b border-stone-100 pb-2">
                             <i class="fa-solid fa-link text-ramen-red"></i>
-                            <span>新規登録用（REG-）＆書込許可（INV-）トークン発行</span>
+                            <span>新規登録用（REG-）＆書込許可（INV-）トークン発行・消去</span>
                         </h4>
 
                         <p class="text-xs text-stone-600 leading-relaxed">
-                            <strong>REG-トークン</strong>：新規アカウント登録時に必須（1回使い切り／複数回設定可）。登録直後は「閲覧者」になります。<br>
-                            <strong>INV-トークン</strong>：ゲストに一時的な書き込み許可を与えます。
+                            <strong>REG-トークン</strong>：新規アカウント登録時に必須。登録直後は「閲覧者」になります。<br>
+                            <strong>INV-トークン</strong>：ゲストに一時的な書き込み許可を与えます。<strong>トークンを消去すると、そのトークン由来の権限も即座に失効します。</strong>
                         </p>
 
                         <div class="space-y-2">
@@ -565,7 +583,7 @@
                                     </button>
                                 </div>
                             </div>
-                            <div id="invitesList" class="space-y-2 max-h-48 overflow-y-auto"></div>
+                            <div id="invitesList" class="space-y-2 max-h-52 overflow-y-auto"></div>
                         </div>
                     </div>
                 </div>
@@ -588,17 +606,17 @@
                 </div>
             </div>
 
-            <!-- サブビューD: ホスト限定 機能アップデートパッチ導入画面 -->
+            <!-- サブビューD: ホスト限定 JS機能アップデートパッチ導入画面 -->
             <div id="subviewPatch" class="hidden space-y-6">
                 <div class="bg-ramen-black text-white rounded-3xl p-5 border-2 border-emerald-400 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                        <span class="text-[11px] font-black bg-emerald-400 text-ramen-black px-2.5 py-0.5 rounded-full">HOST ONLY · LIVE PATCH ENGINE</span>
-                        <h3 class="text-lg sm:text-xl font-black mt-1.5"><i class="fa-solid fa-wand-magic-sparkles text-emerald-400 mr-2"></i>機能アップデートパッチ導入・配布センター</h3>
-                        <p class="text-xs text-stone-300 mt-0.5">HTMLファイルを毎回差し替えずに、UI追加・カスタムCSS・安全サンドボックス拡張・スキーマ/マスタ更新・パッチJSON配布・ロールバックをホスト限定で導入できます。</p>
+                        <span class="text-[11px] font-black bg-emerald-400 text-ramen-black px-2.5 py-0.5 rounded-full">HOST ONLY · LIVE JS PATCH ENGINE</span>
+                        <h3 class="text-lg sm:text-xl font-black mt-1.5"><i class="fa-solid fa-wand-magic-sparkles text-emerald-400 mr-2"></i>JS形式 機能アップデートパッチ導入・配布センター</h3>
+                        <p class="text-xs text-stone-300 mt-0.5">HTMLファイルを毎回差し替えずに、<strong>JS形式（`.js` / 実行コード・フック・UI描画・ロビーパッチノート追記）</strong>で新機能を追加・保存し、全ユーザーに反映できます。</p>
                     </div>
                     <div class="flex flex-wrap gap-2 shrink-0">
                         <button id="downloadDbPatchBtn" type="button" class="px-4 py-2.5 bg-emerald-400 hover:bg-emerald-300 text-ramen-black rounded-xl text-xs font-black transition">
-                            <i class="fa-solid fa-download mr-1.5"></i>現在構成パッチJSONをDL
+                            <i class="fa-solid fa-download mr-1.5"></i>現在構成JSパッチをDL
                         </button>
                         <button id="rollbackPatchBtn" type="button" class="px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-ramen-black rounded-xl text-xs font-black transition">
                             <i class="fa-solid fa-rotate-left mr-1.5"></i>直前スナップショットへ戻す
@@ -606,67 +624,83 @@
                     </div>
                 </div>
 
-                <!-- プリセット機能パッチ一覧 -->
+                <!-- プリセットJS機能パッチ一覧 -->
                 <div class="bg-white rounded-3xl p-5 shadow-sm border border-stone-200/90 space-y-4">
                     <div class="flex items-center justify-between flex-wrap gap-2 border-b border-stone-100 pb-2">
-                        <h4 class="text-base font-black text-ramen-black">すぐに導入できる機能アップデートパッチ（プリセット）</h4>
-                        <span class="text-[11px] text-stone-500">適用された機能パッチはクラウド保存され、全閲覧者にも反映されます</span>
+                        <h4 class="text-base font-black text-ramen-black">すぐに導入できるJS機能アップデートパッチ（プリセット）</h4>
+                        <span class="text-[11px] text-stone-500">適用されたJS機能パッチはクラウド保存され、ロビーのパッチノートにも記録されます</span>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
                         <div class="p-4 rounded-2xl bg-ramen-cream/70 border border-stone-200 flex flex-col justify-between space-y-3">
                             <div class="space-y-1.5">
                                 <span class="font-mono text-[10px] bg-white px-2 py-0.5 rounded border text-emerald-700 font-bold">patch-feat-budget-widget</span>
-                                <h5 class="font-black text-sm text-ramen-black">機能追加: 期間累計金額・平均単価ウィジェット</h5>
-                                <p class="text-stone-600">ダッシュボード下部に「期間合計支出」「平均杯単価」「最高額メニュー」の集計カードを動的に追加します。</p>
+                                <h5 class="font-black text-sm text-ramen-black">JS機能追加: 期間累計金額・平均単価ウィジェット</h5>
+                                <p class="text-stone-600">JSフックでダッシュボード下部に「期間合計支出」「平均杯単価」「最高額メニュー」を動的に描画します。</p>
                             </div>
-                            <button type="button" data-preset-patch="patch-feat-budget-widget" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition">機能パッチを導入</button>
+                            <button type="button" data-preset-patch="patch-feat-budget-widget" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition">JSパッチを導入</button>
                         </div>
 
                         <div class="p-4 rounded-2xl bg-ramen-cream/70 border border-stone-200 flex flex-col justify-between space-y-3">
                             <div class="space-y-1.5">
                                 <span class="font-mono text-[10px] bg-white px-2 py-0.5 rounded border text-emerald-700 font-bold">patch-feat-quick-richness</span>
-                                <h5 class="font-black text-sm text-ramen-black">機能追加: 味の濃さワンクリック絞り込みバー</h5>
-                                <p class="text-stone-600">訪問履歴フィルターに「★5 超こってり」「★4 こってり」「★1〜2 あっさり」のクイック絞り込みボタンを追加します。</p>
+                                <h5 class="font-black text-sm text-ramen-black">JS機能追加: 味の濃さワンクリック絞り込みバー</h5>
+                                <p class="text-stone-600">JSフックで訪問履歴フィルターに「★5 超こってり」「★4 こってり」「★1〜2 あっさり」の絞り込みボタンを追加します。</p>
                             </div>
-                            <button type="button" data-preset-patch="patch-feat-quick-richness" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition">機能パッチを導入</button>
+                            <button type="button" data-preset-patch="patch-feat-quick-richness" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition">JSパッチを導入</button>
                         </div>
 
                         <div class="p-4 rounded-2xl bg-ramen-cream/70 border border-stone-200 flex flex-col justify-between space-y-3">
                             <div class="space-y-1.5">
                                 <span class="font-mono text-[10px] bg-white px-2 py-0.5 rounded border text-amber-700 font-bold">patch-v2-fields</span>
-                                <h5 class="font-black text-sm text-ramen-black">データ補完: 訪問記録フィールド正規化</h5>
-                                <p class="text-stone-600">全訪問履歴に `richness`（1〜5）、`volume`（量）、カスタム項目初期値が欠けている場合に補完し、サンプル記録も追加できます。</p>
+                                <h5 class="font-black text-sm text-ramen-black">JSデータ補完: 訪問記録フィールド正規化</h5>
+                                <p class="text-stone-600">JSパッチで全訪問履歴の `richness`（1〜5）、`volume`、カスタム項目初期値を補完し、スキーマを更新します。</p>
                             </div>
-                            <button type="button" data-preset-patch="patch-v2-fields" class="w-full py-2 bg-ramen-black hover:bg-stone-800 text-white rounded-xl font-bold transition">データパッチを適用</button>
+                            <button type="button" data-preset-patch="patch-v2-fields" class="w-full py-2 bg-ramen-black hover:bg-stone-800 text-white rounded-xl font-bold transition">JSパッチを適用</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- 導入済み機能パッチの管理（有効/無効・削除） -->
+                <!-- 導入済みJS機能パッチの管理（有効/無効・削除） -->
                 <div class="bg-white rounded-3xl p-5 shadow-sm border border-stone-200/90 space-y-3">
-                    <h4 class="text-base font-black text-ramen-black">導入済み機能モジュール一覧（オン/オフ・削除）</h4>
+                    <h4 class="text-base font-black text-ramen-black">導入済みJS機能モジュール一覧（オン/オフ・削除）</h4>
                     <div id="installedFeaturePatchesList" class="space-y-2 text-xs"></div>
                 </div>
 
-                <!-- カスタムJSONパッチビルダー＆導入 -->
+                <!-- JS形式カスタムパッチ作成・読込・導入 -->
                 <div class="bg-white rounded-3xl p-5 shadow-sm border border-stone-200/90 space-y-3">
                     <div class="flex items-center justify-between flex-wrap gap-2">
-                        <h4 class="text-base font-black text-ramen-black">機能アップデートJSONパッチ作成・読込・導入</h4>
-                        <label class="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 border border-stone-300 rounded-xl text-xs font-bold cursor-pointer">
-                            <i class="fa-solid fa-file-arrow-up mr-1 text-emerald-700"></i>パッチJSONファイルを読込
-                            <input id="loadPatchFileInput" type="file" accept=".json,application/json" class="hidden">
-                        </label>
+                        <h4 class="text-base font-black text-ramen-black">JS形式（`.js`）機能アップデートパッチ作成・読込・導入</h4>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <button id="insertSampleJsPatchBtn" type="button" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-xl text-xs font-bold transition">
+                                <i class="fa-solid fa-code mr-1"></i>JSパッチ雛形を挿入
+                            </button>
+                            <label class="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 border border-stone-300 rounded-xl text-xs font-bold cursor-pointer">
+                                <i class="fa-solid fa-file-code mr-1 text-emerald-700"></i>.js / .json パッチを読込
+                                <input id="loadPatchFileInput" type="file" accept=".js,.json,application/javascript,text/javascript,application/json" class="hidden">
+                            </label>
+                        </div>
                     </div>
                     <p class="text-xs text-stone-500">
-                        `customCss`、`featureFlags`、`uiWidgets`（`dashboard` / `visitFilter`）、`classifications`、`customFields`、`schemaVersion` を含む機能パッチJSONを導入・ダウンロードできます。
+                        JS形式（<code>export const patch = { ... }</code> または <code>window.RamenPatch = { ... }</code>、あるいは純粋なJSON形式）で記述できます。<br>
+                        <code>onRender(ctx)</code> 関数や <code>patchNote</code>（ロビーのパッチノートに追記される説明）、<code>customCss</code>、<code>featureFlags</code>、<code>classifications</code>、<code>customFields</code> を指定可能です。
                     </p>
-                    <textarea id="customPatchJsonInput" rows="6" placeholder='{"patchId":"patch-custom-01","title":"カスタム機能パッチ","schemaVersion":"1.2.0","customCss":"/* 追加CSS */","featureFlags":{"showRichnessQuickBar":true}}' class="w-full p-3 bg-stone-900 text-emerald-300 font-mono text-xs rounded-2xl border border-stone-700 focus:outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
+                    <textarea id="customPatchJsonInput" rows="10" placeholder='export const patch = {
+  patchId: "patch-custom-js-01",
+  title: "カスタムJS機能パッチ",
+  schemaVersion: "1.3.0",
+  patchNote: "ロビーのパッチノートに表示されるアップデート内容",
+  customCss: "/* 追加CSS */",
+  featureFlags: {},
+  onRender(ctx) {
+    // ctx.db, ctx.sys, ctx.role, ctx.slots.lobby, ctx.slots.dashboard, ctx.slots.visitFilter, ctx.helpers.esc
+  }
+};' class="w-full p-3 bg-stone-900 text-emerald-300 font-mono text-xs rounded-2xl border border-stone-700 focus:outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
                     <div class="flex flex-wrap justify-end gap-2">
                         <button id="downloadCustomPatchTextareaBtn" type="button" class="px-4 py-2.5 bg-stone-800 hover:bg-stone-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-2">
-                            <i class="fa-solid fa-download"></i><span>テキスト内容PatchをDL</span>
+                            <i class="fa-solid fa-download"></i><span>.jsパッチファイルをDL</span>
                         </button>
                         <button id="applyCustomPatchBtn" type="button" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-2">
-                            <i class="fa-solid fa-play"></i><span>機能パッチを導入実行</span>
+                            <i class="fa-solid fa-play"></i><span>JS機能パッチを導入実行</span>
                         </button>
                     </div>
                 </div>
@@ -1278,6 +1312,10 @@
             return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         }
 
+        function nowTimestampString() {
+            return new Date().toLocaleString('ja-JP');
+        }
+
         function clone(o) {
             return JSON.parse(JSON.stringify(o));
         }
@@ -1312,8 +1350,20 @@
                         createdAt: daysAgo(1)
                     }
                 ],
-                // ホスト限定で導入する機能パッチ一覧（システム共通＆DB別パッチ履歴）
-                // featurePatches: [{ id, patchId, title, enabled, customCss, featureFlags, uiWidgets, installedAt }]
+                // ロビーに表示するパッチノート一覧
+                // lobbyPatchNotes: [{ id, patchId, title, version, note, appliedAt }]
+                lobbyPatchNotes: [
+                    {
+                        id: 'ln-init-1',
+                        patchId: 'patch-js-engine-v1',
+                        title: 'JS形式 機能パッチ＆ロビーパッチノート対応',
+                        version: '1.3.0',
+                        note: 'ホストからJS形式の機能アップデートパッチを導入可能になり、ロビーにパッチノートを表示するようにしました。トークン消去時の権限即時失効にも対応しています。',
+                        appliedAt: daysAgo(0)
+                    }
+                ],
+                // ホスト限定で導入する機能パッチ一覧（JSコード文字列・CSS・FeatureFlags保持）
+                // featurePatches: [{ id, patchId, title, enabled, customCss, featureFlags, jsCode, patchNote, schemaVersion, installedAt }]
                 featurePatches: [],
                 databases: [
                     {
@@ -1436,8 +1486,31 @@
             return (sys.users || []).find((u) => u.uid === uid || (u.email && u.email.toLowerCase() === email)) || null;
         }
 
+        // トークン消去・無効化チェック（ゲスト書込トークン INV- 用）
+        function getValidGuestInvite() {
+            if (!redeemedInviteToken) return null;
+            return (sys.invites || []).find((x) =>
+                x.active &&
+                x.purpose !== 'register' &&
+                !x.token.toUpperCase().startsWith('REG-') &&
+                x.token.toLowerCase() === redeemedInviteToken.toLowerCase()
+            ) || null;
+        }
+
+        // 消去済み・無効化されたゲストトークンを持っていた場合、権限を自動的に失効させる
+        function enforceTokenRevocationIfNeeded() {
+            if (redeemedInviteToken && !getValidGuestInvite()) {
+                redeemedInviteToken = '';
+                localStorage.removeItem(INVITE_SESSION_KEY);
+                return true;
+            }
+            return false;
+        }
+
         // ロール判定：'host' | 'writer' | 'viewer'
         function getEffectiveRole() {
+            enforceTokenRevocationIfNeeded();
+
             if (currentAuthUser && !currentAuthUser.isAnonymous && currentAuthUser.email) {
                 const email = currentAuthUser.email.toLowerCase();
                 if (sys.hostEmail && sys.hostEmail.toLowerCase() === email) {
@@ -1454,14 +1527,9 @@
                 }
                 return 'viewer';
             }
-            if (redeemedInviteToken) {
-                const inv = (sys.invites || []).find((x) =>
-                    x.active &&
-                    x.purpose !== 'register' &&
-                    !x.token.toUpperCase().startsWith('REG-') &&
-                    x.token.toLowerCase() === redeemedInviteToken.toLowerCase()
-                );
-                if (inv) return 'writer';
+
+            if (getValidGuestInvite()) {
+                return 'writer';
             }
             return 'viewer';
         }
@@ -1474,7 +1542,8 @@
             if (currentAuthUser && !currentAuthUser.isAnonymous && currentAuthUser.email) {
                 return currentAuthUser.email;
             }
-            if (redeemedInviteToken) return `招待ゲスト(${redeemedInviteToken})`;
+            const gInv = getValidGuestInvite();
+            if (gInv) return `招待ゲスト(${gInv.token})`;
             return 'ゲスト閲覧者';
         }
 
@@ -1500,10 +1569,6 @@
             return !getUserOwnedDb();
         }
 
-        // 書き込み（追加・編集）権限判定
-        // ・ホスト：全DB可
-        // ・書き込みユーザー：自分が作成したDB、またはホストに許可されたDBのみ可
-        // ・閲覧者：不可
         function canWriteDb(db) {
             if (!db) return false;
             const role = getEffectiveRole();
@@ -1519,23 +1584,13 @@
                 return false;
             }
 
-            if (redeemedInviteToken) {
-                const inv = (sys.invites || []).find((x) =>
-                    x.active &&
-                    x.purpose !== 'register' &&
-                    x.token.toLowerCase() === redeemedInviteToken.toLowerCase()
-                );
-                if (inv && Array.isArray(inv.allowedDbIds) && inv.allowedDbIds.includes(db.id)) {
-                    return true;
-                }
+            const gInv = getValidGuestInvite();
+            if (gInv && Array.isArray(gInv.allowedDbIds) && gInv.allowedDbIds.includes(db.id)) {
+                return true;
             }
             return false;
         }
 
-        // 削除（履歴・店舗の削除）権限判定
-        // ・ホスト：全DBの削除可
-        // ・書き込みユーザー：自分が作成したDBの削除のみ可（他人のDBは追加・編集のみ可、削除不可）
-        // ・閲覧者：不可
         function canDeleteInDb(db) {
             if (!db) return false;
             if (isHost()) return true;
@@ -1555,7 +1610,6 @@
             return unlockedDbSessionSet.has(db.id);
         }
 
-        // 新規登録トークン（REG-）の検証
         function validateRegistrationToken(rawToken) {
             const code = String(rawToken || '').trim();
             if (!code) {
@@ -1567,7 +1621,7 @@
                 x.token.toLowerCase() === code.toLowerCase()
             );
             if (!inv) {
-                return { ok: false, reason: '無効または期限切れの新規登録トークンです。ホストに確認してください。' };
+                return { ok: false, reason: '無効・消去済みまたは期限切れの新規登録トークンです。ホストに確認してください。' };
             }
             if (inv.singleUse && Array.isArray(inv.usedBy) && inv.usedBy.length > 0) {
                 return { ok: false, reason: 'この新規登録トークンはすでに使用済み（1回限り）です。' };
@@ -1614,9 +1668,11 @@
                 classifications: Object.assign(base.classifications, data.classifications || {}),
                 customFields: Array.isArray(data.customFields) ? data.customFields : base.customFields,
                 invites: Array.isArray(data.invites) ? data.invites : base.invites,
+                lobbyPatchNotes: Array.isArray(data.lobbyPatchNotes) ? data.lobbyPatchNotes : base.lobbyPatchNotes,
                 featurePatches: Array.isArray(data.featurePatches) ? data.featurePatches : [],
                 databases: Array.isArray(data.databases) ? data.databases : base.databases
             };
+            enforceTokenRevocationIfNeeded();
         }
 
         async function ensureUserRegisteredInSystem(user, usedRegTokenCode = '') {
@@ -1638,7 +1694,6 @@
                 existing = {
                     uid: user.uid,
                     email,
-                    // 招待登録直後は必ず viewer（閲覧者）
                     role: isFirstHost ? 'host' : 'viewer',
                     allowedDbIds: [],
                     registeredWithToken: usedRegTokenCode || '',
@@ -1668,9 +1723,103 @@
             }
         }
 
-        // 機能パッチ（CSS / Widget / FeatureFlags）の適用描画
+        // JS形式パッチコード（文字列）を安全側で評価してオブジェクト化するパーサ
+        function parseJsOrJsonPatchInput(rawText) {
+            const trimmed = String(rawText || '').trim();
+            if (!trimmed) throw new Error('パッチ内容が空です');
+
+            // まずJSONとしてパース試行
+            try {
+                const asJson = JSON.parse(trimmed);
+                if (asJson && typeof asJson === 'object') {
+                    return Object.assign({}, asJson, { rawJsCode: trimmed });
+                }
+            } catch (_) {}
+
+            // JSモジュール / スクリプト形式を変換して評価
+            let transformed = trimmed
+                .replace(/^\s*export\s+default\s+/m, 'const __exportedPatch = ')
+                .replace(/^\s*export\s+(?:const|let|var)\s+patch\s*=\s*/m, 'const __exportedPatch = ')
+                .replace(/^\s*export\s+\{[^}]*\}\s*;?\s*$/gm, '');
+
+            const fnBody = `
+                "use strict";
+                let __exportedPatch = null;
+                const window = globalThis;
+                ${transformed}
+                if (typeof __exportedPatch !== "undefined" && __exportedPatch) return __exportedPatch;
+                if (typeof patch !== "undefined" && patch) return patch;
+                if (window.RamenPatch) return window.RamenPatch;
+                throw new Error("patch オブジェクトが見つかりません（export const patch = { ... } または window.RamenPatch = { ... } を定義してください）");
+            `;
+
+            const evaluator = new Function(fnBody);
+            const result = evaluator();
+            if (!result || typeof result !== 'object') {
+                throw new Error('有効なパッチオブジェクトが返されませんでした');
+            }
+            return Object.assign({}, result, { rawJsCode: trimmed });
+        }
+
+        // 保存済みのJS機能パッチを実行する
+        function executeStoredJsPatchHook(fp, context) {
+            if (!fp || fp.enabled === false || !fp.jsCode) return;
+            try {
+                let code = String(fp.jsCode).trim();
+                code = code
+                    .replace(/^\s*export\s+default\s+/m, 'const __p = ')
+                    .replace(/^\s*export\s+(?:const|let|var)\s+patch\s*=\s*/m, 'const __p = ')
+                    .replace(/^\s*export\s+\{[^}]*\}\s*;?\s*$/gm, '');
+
+                const runner = new Function('ctx', `
+                    "use strict";
+                    let __p = null;
+                    const window = globalThis;
+                    ${code}
+                    const target = (typeof __p !== "undefined" && __p) || (typeof patch !== "undefined" && patch) || window.RamenPatch;
+                    if (target && typeof target.onRender === "function") {
+                        target.onRender(ctx);
+                    }
+                `);
+                runner(context);
+            } catch (err) {
+                console.warn(`JSパッチ実行スキップ (${fp.patchId}):`, err);
+            }
+        }
+
+        // ロビーのパッチノート描画
+        function renderLobbyPatchNotes() {
+            const listEl = document.getElementById('lobbyPatchNotesList');
+            const badgeEl = document.getElementById('lobbyPatchNotesCountBadge');
+            if (!listEl || !badgeEl) return;
+
+            const notes = sys.lobbyPatchNotes || [];
+            badgeEl.textContent = `${notes.length}件`;
+
+            if (notes.length === 0) {
+                listEl.innerHTML = `<p class="text-stone-400">まだパッチノートはありません。</p>`;
+                return;
+            }
+
+            listEl.innerHTML = notes.slice().reverse().map((n) => `
+                <div class="bg-white rounded-xl p-3 border border-stone-200/80 space-y-1">
+                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded">${esc(n.patchId || 'PATCH')}</span>
+                            <strong class="text-ramen-black">${esc(n.title || 'アップデート')}</strong>
+                            ${n.version ? `<span class="text-[10px] font-mono text-stone-500">v${esc(n.version)}</span>` : ''}
+                        </div>
+                        <span class="text-[10px] text-stone-400">${esc(n.appliedAt || '')}</span>
+                    </div>
+                    ${n.note ? `<p class="text-[11px] text-stone-600 leading-relaxed whitespace-pre-line">${esc(n.note)}</p>` : ''}
+                </div>
+            `).join('');
+        }
+
+        // 機能パッチ（CSS / Widget / FeatureFlags / JSフック）の適用描画
         function applyActiveFeaturePatches(db) {
             const styleTag = document.getElementById('dynamicHostPatchStyles');
+            const lobbySlot = document.getElementById('patchLobbySlot');
             const dashSlot = document.getElementById('patchExtraDashboardSlot');
             const visitFilterSlot = document.getElementById('patchExtraVisitFilterSlot');
 
@@ -1679,59 +1828,83 @@
                 styleTag.textContent = activePatches.map((p) => p.customCss || '').filter(Boolean).join('\n\n');
             }
 
-            if (!db || !dashSlot || !visitFilterSlot) return;
-
-            const mergedFlags = Object.assign({}, ...activePatches.map((p) => p.featureFlags || {}));
-            const allVisits = db.visits || [];
-            const pVisits = allVisits.filter((v) => inPeriod(v.date, viewState.period));
-
-            // プリセット/カスタムWidget: 期間累計金額・平均単価
-            if (mergedFlags.showBudgetWidget) {
-                const totalYen = pVisits.reduce((sum, v) => sum + (Number(v.price) > 0 ? Number(v.price) : 0), 0);
-                const pricedVisits = pVisits.filter((v) => Number(v.price) > 0);
-                const avgYen = pricedVisits.length > 0 ? Math.round(totalYen / pricedVisits.length) : 0;
-                const maxVisit = pricedVisits.slice().sort((a, b) => Number(b.price) - Number(a.price))[0];
-
-                dashSlot.classList.remove('hidden');
-                dashSlot.innerHTML = `
-                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-emerald-200 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                        <div class="p-3 rounded-xl bg-emerald-50/70">
-                            <span class="text-[11px] font-bold text-emerald-800 block">期間合計金額</span>
-                            <strong class="text-lg font-black text-ramen-black">${totalYen > 0 ? `¥${totalYen.toLocaleString('ja-JP')}` : '¥0'}</strong>
-                        </div>
-                        <div class="p-3 rounded-xl bg-amber-50/70">
-                            <span class="text-[11px] font-bold text-amber-800 block">平均杯単価</span>
-                            <strong class="text-lg font-black text-ramen-black">${avgYen > 0 ? `¥${avgYen.toLocaleString('ja-JP')}` : '-'}</strong>
-                        </div>
-                        <div class="p-3 rounded-xl bg-stone-50">
-                            <span class="text-[11px] font-bold text-stone-600 block">最高額メニュー</span>
-                            <strong class="text-sm font-black text-ramen-black truncate block">${maxVisit ? `${esc(maxVisit.menu)} (${yen(maxVisit.price)})` : '-'}</strong>
-                        </div>
-                    </div>
-                `;
-            } else {
-                dashSlot.classList.add('hidden');
-                dashSlot.innerHTML = '';
+            if (lobbySlot) {
+                lobbySlot.innerHTML = '';
+                lobbySlot.classList.add('hidden');
             }
 
-            // プリセット/カスタムWidget: 味の濃さクイック絞り込み
-            if (mergedFlags.showRichnessQuickBar) {
-                visitFilterSlot.classList.remove('hidden');
-                const opts = [
-                    { val: 'ALL', label: '濃さ: すべて' },
-                    { val: '5', label: '★5 超こってり' },
-                    { val: '4', label: '★4 こってり' },
-                    { val: '3', label: '★3 普通' },
-                    { val: 'LIGHT', label: '★1〜2 あっさり' }
-                ];
-                visitFilterSlot.innerHTML = opts.map((o) => {
-                    const active = viewState.visitRichnessFilter === o.val;
-                    return `<button type="button" data-patch-richness="${o.val}" class="px-3 py-1 rounded-xl text-xs font-bold border transition ${active ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-ramen-cream text-stone-700 border-stone-300 hover:bg-amber-100'}">${o.label}</button>`;
-                }).join('');
-            } else {
+            if (dashSlot && visitFilterSlot) {
+                dashSlot.classList.add('hidden');
+                dashSlot.innerHTML = '';
                 visitFilterSlot.classList.add('hidden');
                 visitFilterSlot.innerHTML = '';
-                viewState.visitRichnessFilter = 'ALL';
+            }
+
+            const mergedFlags = Object.assign({}, ...activePatches.map((p) => p.featureFlags || {}));
+
+            if (db && dashSlot && visitFilterSlot) {
+                const allVisits = db.visits || [];
+                const pVisits = allVisits.filter((v) => inPeriod(v.date, viewState.period));
+
+                if (mergedFlags.showBudgetWidget) {
+                    const totalYen = pVisits.reduce((sum, v) => sum + (Number(v.price) > 0 ? Number(v.price) : 0), 0);
+                    const pricedVisits = pVisits.filter((v) => Number(v.price) > 0);
+                    const avgYen = pricedVisits.length > 0 ? Math.round(totalYen / pricedVisits.length) : 0;
+                    const maxVisit = pricedVisits.slice().sort((a, b) => Number(b.price) - Number(a.price))[0];
+
+                    dashSlot.classList.remove('hidden');
+                    dashSlot.innerHTML = `
+                        <div class="bg-white rounded-2xl p-4 shadow-sm border border-emerald-200 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                            <div class="p-3 rounded-xl bg-emerald-50/70">
+                                <span class="text-[11px] font-bold text-emerald-800 block">期間合計金額</span>
+                                <strong class="text-lg font-black text-ramen-black">${totalYen > 0 ? `¥${totalYen.toLocaleString('ja-JP')}` : '¥0'}</strong>
+                            </div>
+                            <div class="p-3 rounded-xl bg-amber-50/70">
+                                <span class="text-[11px] font-bold text-amber-800 block">平均杯単価</span>
+                                <strong class="text-lg font-black text-ramen-black">${avgYen > 0 ? `¥${avgYen.toLocaleString('ja-JP')}` : '-'}</strong>
+                            </div>
+                            <div class="p-3 rounded-xl bg-stone-50">
+                                <span class="text-[11px] font-bold text-stone-600 block">最高額メニュー</span>
+                                <strong class="text-sm font-black text-ramen-black truncate block">${maxVisit ? `${esc(maxVisit.menu)} (${yen(maxVisit.price)})` : '-'}</strong>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                if (mergedFlags.showRichnessQuickBar) {
+                    visitFilterSlot.classList.remove('hidden');
+                    const opts = [
+                        { val: 'ALL', label: '濃さ: すべて' },
+                        { val: '5', label: '★5 超こってり' },
+                        { val: '4', label: '★4 こってり' },
+                        { val: '3', label: '★3 普通' },
+                        { val: 'LIGHT', label: '★1〜2 あっさり' }
+                    ];
+                    visitFilterSlot.innerHTML = opts.map((o) => {
+                        const active = viewState.visitRichnessFilter === o.val;
+                        return `<button type="button" data-patch-richness="${o.val}" class="px-3 py-1 rounded-xl text-xs font-bold border transition ${active ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-ramen-cream text-stone-700 border-stone-300 hover:bg-amber-100'}">${o.label}</button>`;
+                    }).join('');
+                } else {
+                    viewState.visitRichnessFilter = 'ALL';
+                }
+            }
+
+            // 導入済みJSパッチの onRender フックを実行
+            const hookCtx = {
+                screen: viewState.screen,
+                db: db || null,
+                sys,
+                role: getEffectiveRole(),
+                slots: {
+                    lobby: lobbySlot,
+                    dashboard: dashSlot,
+                    visitFilter: visitFilterSlot
+                },
+                helpers: { esc, yen, toast }
+            };
+            activePatches.forEach((fp) => executeStoredJsPatchHook(fp, hookCtx));
+            if (lobbySlot && lobbySlot.innerHTML.trim() !== '') {
+                lobbySlot.classList.remove('hidden');
             }
         }
 
@@ -1783,7 +1956,7 @@
                 inv.token.toLowerCase() === clean.trim().toLowerCase()
             );
             if (!found) {
-                if (!silent) toast('無効または登録専用の招待トークンです', true);
+                if (!silent) toast('無効・消去済みまたは登録専用の招待トークンです', true);
                 return false;
             }
             redeemedInviteToken = found.token;
@@ -1830,7 +2003,7 @@
             if (role === 'host') {
                 badge.className = 'text-[10px] sm:text-xs font-black px-2.5 py-0.5 rounded-full shrink-0 bg-amber-400 text-ramen-black';
                 badge.innerHTML = '<i class="fa-solid fa-crown mr-1"></i>ホスト (Host)';
-                sub.textContent = `ホスト (${getCurrentUserLabel()})：全DB操作・削除・権限管理・機能パッチ導入可能`;
+                sub.textContent = `ホスト (${getCurrentUserLabel()})：全DB操作・削除・権限管理・JSパッチ導入可能`;
                 authBtnLbl.textContent = 'アカウント / 招待';
             } else if (role === 'writer') {
                 badge.className = 'text-[10px] sm:text-xs font-black px-2.5 py-0.5 rounded-full shrink-0 bg-emerald-500 text-white';
@@ -1871,7 +2044,7 @@
                 if (role === 'host') {
                     roleTag.className = 'text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-400 text-ramen-black';
                     roleTag.textContent = 'ホスト (Host)';
-                    roleHint.textContent = '全DBの閲覧・編集・削除、権限付与、機能パッチ導入が可能です。';
+                    roleHint.textContent = '全DBの閲覧・編集・削除、権限付与、JS機能パッチ導入が可能です。';
                 } else if (role === 'writer') {
                     roleTag.className = 'text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-600 text-white';
                     roleTag.textContent = '書き込みユーザー (Writer)';
@@ -1909,6 +2082,8 @@
         }
 
         function renderLobby() {
+            renderLobbyPatchNotes();
+
             const grid = document.getElementById('dbLobbyGrid');
             grid.innerHTML = '';
 
@@ -2424,35 +2599,40 @@
             document.getElementById('hostDbVisibilitySelect').value = db.visibility || 'public_read';
             document.getElementById('hostSchemaVersionInput').value = db.schemaVersion || '1.0.0';
 
-            document.getElementById('invitesList').innerHTML = (sys.invites || []).map((inv) => {
-                const isReg = inv.purpose === 'register' || inv.token.toUpperCase().startsWith('REG-');
-                const shareUrl = isReg
-                    ? inv.token
-                    : `${window.location.origin}${window.location.pathname}?db=${encodeURIComponent(db.id)}&invite=${encodeURIComponent(inv.token)}`;
-                return `
-                    <div class="bg-ramen-cream/70 p-2.5 rounded-xl border border-stone-200 space-y-1.5 text-xs">
-                        <div class="flex items-center justify-between gap-2">
-                            <div class="flex items-center gap-1.5 flex-wrap">
-                                <span class="text-[10px] font-black px-1.5 py-0.5 rounded ${isReg ? 'bg-emerald-100 text-emerald-900' : 'bg-amber-100 text-amber-950'}">${isReg ? '新規登録用' : '書込許可'}</span>
-                                <span class="font-mono font-black text-ramen-red">${esc(inv.token)}</span>
+            const invites = sys.invites || [];
+            if (invites.length === 0) {
+                document.getElementById('invitesList').innerHTML = `<p class="text-xs text-stone-400">発行済みトークンはありません。</p>`;
+            } else {
+                document.getElementById('invitesList').innerHTML = invites.map((inv) => {
+                    const isReg = inv.purpose === 'register' || inv.token.toUpperCase().startsWith('REG-');
+                    const shareUrl = isReg
+                        ? inv.token
+                        : `${window.location.origin}${window.location.pathname}?db=${encodeURIComponent(db.id)}&invite=${encodeURIComponent(inv.token)}`;
+                    return `
+                        <div class="bg-ramen-cream/70 p-2.5 rounded-xl border border-stone-200 space-y-1.5 text-xs">
+                            <div class="flex items-center justify-between gap-2 flex-wrap">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="text-[10px] font-black px-1.5 py-0.5 rounded ${isReg ? 'bg-emerald-100 text-emerald-900' : 'bg-amber-100 text-amber-950'}">${isReg ? '新規登録用' : '書込許可'}</span>
+                                    <span class="font-mono font-black text-ramen-red">${esc(inv.token)}</span>
+                                </div>
+                                <div class="flex items-center gap-1.5 shrink-0">
+                                    <button type="button" data-copy-invite="${esc(shareUrl)}" class="px-2 py-0.5 bg-white hover:bg-stone-100 border rounded font-bold">${isReg ? 'コードコピー' : 'URLコピー'}</button>
+                                    <button type="button" data-toggle-invite="${esc(inv.token)}" class="px-2 py-0.5 bg-stone-200 hover:bg-stone-300 rounded font-bold">${inv.active ? '無効化' : '有効化'}</button>
+                                    <button type="button" data-del-invite="${esc(inv.token)}" class="px-2 py-0.5 bg-red-100 hover:bg-red-200 text-ramen-darkRed rounded font-bold" title="消去（権限失効）"><i class="fa-solid fa-trash-can mr-0.5"></i>消去</button>
+                                </div>
                             </div>
-                            <div class="flex items-center gap-1.5 shrink-0">
-                                <button type="button" data-copy-invite="${esc(shareUrl)}" class="px-2 py-0.5 bg-white hover:bg-stone-100 border rounded font-bold">${isReg ? 'コードコピー' : 'URLコピー'}</button>
-                                <button type="button" data-toggle-invite="${esc(inv.token)}" class="px-2 py-0.5 bg-stone-200 hover:bg-stone-300 rounded font-bold">${inv.active ? '無効化' : '有効化'}</button>
-                            </div>
+                            <p class="text-[11px] text-stone-500 truncate">${esc(inv.label)} (${inv.active ? '有効' : '停止中'}${isReg && inv.usedBy && inv.usedBy.length ? ` / 使用済: ${inv.usedBy.join(', ')}` : ''})</p>
                         </div>
-                        <p class="text-[11px] text-stone-500 truncate">${esc(inv.label)} (${inv.active ? '有効' : '停止中'}${isReg && inv.usedBy && inv.usedBy.length ? ` / 使用済: ${inv.usedBy.join(', ')}` : ''})</p>
-                    </div>
-                `;
-            }).join('');
+                    `;
+                }).join('');
+            }
         }
 
         function renderPatchView(db) {
-            // 導入済み機能パッチ一覧
             const featBox = document.getElementById('installedFeaturePatchesList');
             const fPatches = sys.featurePatches || [];
             if (fPatches.length === 0) {
-                featBox.innerHTML = `<p class="text-stone-400">まだ追加導入された機能パッチはありません。上のプリセットまたはカスタムJSONから導入できます。</p>`;
+                featBox.innerHTML = `<p class="text-stone-400">まだ追加導入されたJS機能パッチはありません。上のプリセットまたはJSパッチ作成欄から導入できます。</p>`;
             } else {
                 featBox.innerHTML = fPatches.map((fp) => {
                     const enabled = fp.enabled !== false;
@@ -2462,6 +2642,7 @@
                                 <span class="font-mono font-bold text-emerald-700 mr-2">${esc(fp.patchId)}</span>
                                 <strong class="text-ramen-black">${esc(fp.title)}</strong>
                                 <span class="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${enabled ? 'bg-emerald-100 text-emerald-800' : 'bg-stone-200 text-stone-600'}">${enabled ? '有効中' : '停止中'}</span>
+                                ${fp.jsCode ? `<span class="ml-1.5 text-[10px] font-mono bg-stone-800 text-emerald-300 px-1.5 py-0.5 rounded">JS</span>` : ''}
                                 <span class="block sm:inline text-[11px] text-stone-400 sm:ml-2">導入日: ${esc(fp.installedAt || '-')}</span>
                             </div>
                             <div class="flex items-center gap-1.5 shrink-0">
@@ -2473,7 +2654,6 @@
                 }).join('');
             }
 
-            // 適用履歴
             const histBox = document.getElementById('patchHistoryList');
             const hist = db.patchHistory || [];
             if (hist.length === 0) {
@@ -2519,6 +2699,7 @@
         }
 
         function render() {
+            enforceTokenRevocationIfNeeded();
             populateDbSelects();
             renderHeaderAndRole();
 
@@ -2529,8 +2710,8 @@
                 document.getElementById('dbWorkspaceView').classList.add('hidden');
                 document.getElementById('dbSubNav').classList.add('hidden');
                 document.getElementById('headerTitleText').textContent = 'My Ramen DB 88';
-                applyActiveFeaturePatches(null);
                 renderLobby();
+                applyActiveFeaturePatches(null);
                 return;
             }
 
@@ -2553,7 +2734,7 @@
             const permPill = document.getElementById('activeDbPermissionPill');
             if (isHost()) {
                 permPill.className = 'text-xs font-black px-3 py-1.5 rounded-xl bg-amber-100 text-amber-950 border border-amber-300';
-                permPill.textContent = '権限: ホスト（全DB閲覧・編集・削除・パッチ導入可）';
+                permPill.textContent = '権限: ホスト（全DB閲覧・編集・削除・JSパッチ導入可）';
             } else if (isOwnerOfDb(db)) {
                 permPill.className = 'text-xs font-black px-3 py-1.5 rounded-xl bg-emerald-100 text-emerald-900 border border-emerald-300';
                 permPill.textContent = '権限: 本人DBオーナー（作成・編集・削除可）';
@@ -2590,7 +2771,6 @@
             setNavActive('navTabPatchBtn', viewState.dbTab === 'patch');
 
             renderDbDashboard(db);
-            applyActiveFeaturePatches(db);
 
             const isDataTab = viewState.dbTab === 'visits' || viewState.dbTab === 'shops';
             document.getElementById('dbStatsBlock').classList.toggle('hidden', !isDataTab);
@@ -2603,6 +2783,8 @@
             else if (viewState.dbTab === 'shops') renderDbShops(db);
             else if (viewState.dbTab === 'host') renderHostView(db);
             else if (viewState.dbTab === 'patch') renderPatchView(db);
+
+            applyActiveFeaturePatches(db);
         }
 
         function renderCustomFieldInputs(target, containerId, valuesObj) {
@@ -2994,8 +3176,8 @@
             });
         }
 
-        function downloadJsonFile(obj, filename) {
-            const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+        function downloadFile(content, filename, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -3006,7 +3188,25 @@
             URL.revokeObjectURL(url);
         }
 
-        // ホスト限定：機能アップデートパッチ＆データパッチの導入処理
+        function downloadJsonFile(obj, filename) {
+            downloadFile(JSON.stringify(obj, null, 2), filename, 'application/json');
+        }
+
+        function buildJsPatchTemplate() {
+            return `export const patch = {
+  patchId: "patch-js-custom-01",
+  title: "カスタムJS機能パッチ",
+  schemaVersion: "1.3.0",
+  patchNote: "ロビーのパッチノートに追記されるアップデート内容",
+  customCss: "",
+  featureFlags: {},
+  onRender(ctx) {
+    // 必要に応じて ctx.slots.lobby / ctx.slots.dashboard / ctx.slots.visitFilter を操作できます
+  }
+};`;
+        }
+
+        // ホスト限定：JS機能アップデートパッチ＆データパッチの導入処理
         async function runPatchOnActiveDb(patchObj) {
             const db = getActiveDb();
             if (!db || !isHost()) {
@@ -3015,7 +3215,7 @@
             }
 
             db.lastSnapshot = {
-                savedAt: new Date().toLocaleString('ja-JP'),
+                savedAt: nowTimestampString(),
                 schemaVersion: db.schemaVersion,
                 shops: clone(db.shops || []),
                 visits: clone(db.visits || [])
@@ -3029,17 +3229,22 @@
                     patchId,
                     title: '期間累計金額・平均単価ウィジェット',
                     schemaVersion: patchObj.schemaVersion || '1.1.0',
-                    featureFlags: { showBudgetWidget: true }
+                    patchNote: patchObj.patchNote || 'ダッシュボードに「期間合計金額」「平均杯単価」「最高額メニュー」ウィジェットを追加しました。',
+                    featureFlags: { showBudgetWidget: true },
+                    rawJsCode: patchObj.rawJsCode || ''
                 };
             } else if (patchId === 'patch-feat-quick-richness') {
                 normalizedPatch = {
                     patchId,
                     title: '味の濃さワンクリック絞り込みバー',
                     schemaVersion: patchObj.schemaVersion || '1.2.0',
-                    featureFlags: { showRichnessQuickBar: true }
+                    patchNote: patchObj.patchNote || '訪問履歴に「味の濃さ」クイック絞り込みボタンを追加しました。',
+                    featureFlags: { showRichnessQuickBar: true },
+                    rawJsCode: patchObj.rawJsCode || ''
                 };
             } else if (patchId === 'patch-v2-fields') {
                 normalizedPatch.title = normalizedPatch.title || '訪問記録フィールド補完';
+                normalizedPatch.patchNote = patchObj.patchNote || '訪問記録の味の濃さ・量・カスタム項目初期値を正規化しました。';
                 const visitCfs = (sys.customFields || []).filter((f) => f.target === 'visits');
                 db.visits = (db.visits || []).map((v) => {
                     const cv = Object.assign({}, v.customValues || {});
@@ -3056,9 +3261,15 @@
             }
 
             const title = String(normalizedPatch.title || patchId);
+            const jsCodeStr = String(
+                normalizedPatch.rawJsCode ||
+                (typeof normalizedPatch.onRender === 'function'
+                    ? `export const patch = { patchId: ${JSON.stringify(patchId)}, title: ${JSON.stringify(title)}, onRender: ${normalizedPatch.onRender.toString()} };`
+                    : '')
+            );
 
-            // 機能モジュール（CSS / FeatureFlags / 選択項目 / カスタム項目）の登録・更新
             const hasFeaturePayload = Boolean(
+                jsCodeStr ||
                 normalizedPatch.customCss ||
                 (normalizedPatch.featureFlags && typeof normalizedPatch.featureFlags === 'object') ||
                 (normalizedPatch.classifications && typeof normalizedPatch.classifications === 'object') ||
@@ -3078,7 +3289,10 @@
                         existingIdx !== -1 ? (sys.featurePatches[existingIdx].featureFlags || {}) : {},
                         normalizedPatch.featureFlags || {}
                     ),
-                    installedAt: new Date().toLocaleString('ja-JP')
+                    jsCode: jsCodeStr,
+                    patchNote: String(normalizedPatch.patchNote || ''),
+                    schemaVersion: String(normalizedPatch.schemaVersion || db.schemaVersion || '1.0.0'),
+                    installedAt: nowTimestampString()
                 };
                 if (existingIdx !== -1) sys.featurePatches[existingIdx] = featureEntry;
                 else sys.featurePatches.push(featureEntry);
@@ -3118,16 +3332,29 @@
                 db.schemaVersion = String(normalizedPatch.schemaVersion);
             }
 
+            const appliedAt = nowTimestampString();
+
+            // ロビーのパッチノートに追記
+            sys.lobbyPatchNotes = sys.lobbyPatchNotes || [];
+            sys.lobbyPatchNotes.push({
+                id: `ln-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+                patchId,
+                title,
+                version: String(normalizedPatch.schemaVersion || db.schemaVersion || '1.0.0'),
+                note: String(normalizedPatch.patchNote || `${title} を導入しました。`),
+                appliedAt
+            });
+
             db.patchHistory = db.patchHistory || [];
             db.patchHistory.push({
                 patchId,
                 title,
-                appliedAt: new Date().toLocaleString('ja-JP')
+                appliedAt
             });
 
             await saveSystem();
             render();
-            toast(`機能パッチ「${title}」を導入しました`);
+            toast(`JS機能パッチ「${title}」を導入し、ロビーのパッチノートを更新しました`);
         }
 
         function deleteDatabaseById(dbId) {
@@ -3163,7 +3390,6 @@
                 document.getElementById('inviteRoleModal').classList.add('hidden');
             });
 
-            // ログイン
             document.getElementById('authLoginForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const email = document.getElementById('authEmailInput').value.trim();
@@ -3179,7 +3405,6 @@
                 }
             });
 
-            // 招待コード（REG-）必須の新規登録（登録直後は閲覧者）
             document.getElementById('authRegisterBtn').addEventListener('click', async () => {
                 const email = document.getElementById('authEmailInput').value.trim();
                 const pass = document.getElementById('authPasswordInput').value;
@@ -3402,7 +3627,6 @@
                 render();
             });
 
-            // 機能パッチ導入の味の濃さクイックフィルタ
             document.getElementById('patchExtraVisitFilterSlot').addEventListener('click', (e) => {
                 const btn = e.target.closest('[data-patch-richness]');
                 if (!btn) return;
@@ -3624,16 +3848,15 @@
                 const f = e.target.closest('[data-mfile]');
                 if (!f || !f.files || !f.files[0]) return;
                 syncDraftMenusDom();
-                const idx = Number(f.dataset.mfile);
                 try {
-                    draftMenus[idx].photo = await compressPhoto(f.files[0]);
+                    draftMenus[Number(f.dataset.mfile)].photo = await compressPhoto(f.files[0]);
                     renderDraftMenusDom();
-                } catch (_) { toast('写真圧縮に失敗しました', true); }
+                } catch (_) { toast('メニュー画像の圧縮に失敗しました', true); }
             });
             document.getElementById('sCallPhotoInput').addEventListener('change', async (e) => {
                 const f = e.target.files && e.target.files[0];
                 if (!f) return;
-                try { setCallPhoto(await compressPhoto(f)); } catch (_) { toast('写真圧縮に失敗しました', true); }
+                try { setCallPhoto(await compressPhoto(f)); } catch (_) { toast('画像圧縮に失敗しました', true); }
             });
             document.getElementById('sRemoveCallPhotoBtn').addEventListener('click', () => {
                 document.getElementById('sCallPhotoInput').value = '';
@@ -3644,17 +3867,16 @@
                 e.preventDefault();
                 const db = getActiveDb();
                 if (!db || !canWriteCurrentDb()) return;
-                syncDraftMenusDom();
                 const name = document.getElementById('sNameInput').value.trim();
                 if (!name) { toast('店名を入力してください', true); return; }
+                syncDraftMenusDom();
 
                 const editId = document.getElementById('shopEditId').value;
-                const retVisit = document.getElementById('shopReturnToVisit').value === 'true';
-
-                const rec = {
-                    id: editId || `shop-${Date.now()}`,
+                const returnToVisit = document.getElementById('shopReturnToVisit').value === 'true';
+                const shopRec = {
+                    id: editId || `s-${Date.now()}`,
                     name,
-                    genre: document.getElementById('sGenreSelect').value,
+                    genre: document.getElementById('sGenreSelect').value || 'その他',
                     area: document.getElementById('sAreaInput').value.trim(),
                     address: document.getElementById('sAddressInput').value.trim(),
                     description: document.getElementById('sDescInput').value.trim(),
@@ -3665,30 +3887,38 @@
                     seatingTypes: readChipGroup('sSeatingChips'),
                     tissueType: document.getElementById('sTissueSelect').value,
                     tissueDetail: document.getElementById('sTissueNoteInput').value.trim(),
-                    menus: draftMenus.filter((m) => (m.name && m.name.trim()) || m.photo),
+                    menus: draftMenus.filter((m) => (m.name || '').trim() !== '' || m.photo),
                     callGuide: document.getElementById('sCallGuideInput').value.trim(),
                     callPhoto: draftCallPhoto,
                     toppings: document.getElementById('sToppingsInput').value.trim(),
                     precautions: document.getElementById('sPrecautionsInput').value.trim(),
-                    link1: { label: document.getElementById('sLink1Label').value.trim(), url: document.getElementById('sLink1Url').value.trim() },
-                    link2: { label: document.getElementById('sLink2Label').value.trim(), url: document.getElementById('sLink2Url').value.trim() },
+                    link1: {
+                        label: document.getElementById('sLink1Label').value.trim(),
+                        url: document.getElementById('sLink1Url').value.trim()
+                    },
+                    link2: {
+                        label: document.getElementById('sLink2Label').value.trim(),
+                        url: document.getElementById('sLink2Url').value.trim()
+                    },
                     customValues: collectCustomFieldValues('shopCustomFieldsBox')
                 };
 
                 db.shops = db.shops || [];
                 if (editId) {
                     const idx = db.shops.findIndex((x) => x.id === editId);
-                    if (idx !== -1) db.shops[idx] = rec;
+                    if (idx !== -1) db.shops[idx] = shopRec;
                     toast('店舗情報を更新しました');
                 } else {
-                    db.shops.unshift(rec);
-                    toast(`「${name}」を登録しました`);
+                    db.shops.push(shopRec);
+                    toast('店舗を登録しました');
                 }
                 await saveSystem();
                 document.getElementById('shopModal').classList.add('hidden');
                 render();
-                if (retVisit) {
-                    pickShopForVisit(rec.id);
+
+                if (returnToVisit && !document.getElementById('visitModal').classList.contains('hidden')) {
+                    renderVisitShopPicker();
+                    pickShopForVisit(shopRec.id);
                 }
             });
 
@@ -3698,31 +3928,31 @@
                 if (!isHost()) return;
                 const roleSel = e.target.closest('[data-user-role-select]');
                 if (roleSel) {
-                    const targetUid = roleSel.dataset.userRoleSelect;
-                    const u = (sys.users || []).find((x) => x.uid === targetUid);
+                    const uid = roleSel.dataset.userRoleSelect;
+                    const u = (sys.users || []).find((x) => x.uid === uid);
                     if (u) {
                         u.role = roleSel.value;
                         await saveSystem();
                         render();
-                        toast(`${u.email} の権限を「${roleSel.value}」に変更しました`);
+                        toast(`${u.email} の権限を「${u.role}」に変更しました`);
                     }
                     return;
                 }
-                const dbCb = e.target.closest('[data-user-db-perm]');
-                if (dbCb) {
-                    const targetUid = dbCb.dataset.userDbPerm;
-                    const targetDbId = dbCb.dataset.targetDb;
-                    const u = (sys.users || []).find((x) => x.uid === targetUid);
+                const permChk = e.target.closest('[data-user-db-perm]');
+                if (permChk) {
+                    const uid = permChk.dataset.userDbPerm;
+                    const targetDbId = permChk.dataset.targetDb;
+                    const u = (sys.users || []).find((x) => x.uid === uid);
                     if (u) {
                         u.allowedDbIds = Array.isArray(u.allowedDbIds) ? u.allowedDbIds : [];
-                        if (dbCb.checked) {
+                        if (permChk.checked) {
                             if (!u.allowedDbIds.includes(targetDbId)) u.allowedDbIds.push(targetDbId);
                         } else {
                             u.allowedDbIds = u.allowedDbIds.filter((id) => id !== targetDbId);
                         }
                         await saveSystem();
                         render();
-                        toast('書き込み許可DBを更新しました');
+                        toast('DB別書き込み許可を更新しました');
                     }
                 }
             });
@@ -3732,6 +3962,7 @@
                 if (!isHost()) return;
                 const label = document.getElementById('cfLabelInput').value.trim();
                 if (!label) return;
+                sys.customFields = sys.customFields || [];
                 sys.customFields.push({
                     id: `cf-${Date.now()}`,
                     target: document.getElementById('cfTargetSelect').value,
@@ -3739,17 +3970,17 @@
                     type: document.getElementById('cfTypeSelect').value,
                     defaultValue: document.getElementById('cfDefaultInput').value.trim()
                 });
-                document.getElementById('cfLabelInput').value = '';
-                document.getElementById('cfDefaultInput').value = '';
+                document.getElementById('addCustomFieldForm').reset();
                 await saveSystem();
                 render();
                 toast(`カスタム項目「${label}」を追加しました`);
             });
 
             document.getElementById('customFieldsList').addEventListener('click', async (e) => {
+                if (!isHost()) return;
                 const b = e.target.closest('[data-del-cf]');
-                if (!b || !isHost()) return;
-                sys.customFields = sys.customFields.filter((f) => f.id !== b.dataset.delCf);
+                if (!b) return;
+                sys.customFields = (sys.customFields || []).filter((f) => f.id !== b.dataset.delCf);
                 await saveSystem();
                 render();
                 toast('カスタム項目を削除しました');
@@ -3759,55 +3990,57 @@
                 const b = e.target.closest('.hcat-btn');
                 if (!b) return;
                 viewState.hostClassCat = b.dataset.hcat;
-                const db = getActiveDb();
-                if (db) renderHostView(db);
+                render();
             });
 
             document.getElementById('hostAddClassItemForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 if (!isHost()) return;
-                const inp = document.getElementById('hostNewClassItemInput');
-                const val = inp.value.trim();
+                const val = document.getElementById('hostNewClassItemInput').value.trim();
                 if (!val) return;
-                const arr = sys.classifications[viewState.hostClassCat];
+                const arr = sys.classifications[viewState.hostClassCat] || [];
                 if (!arr.includes(val)) arr.push(val);
-                inp.value = '';
+                sys.classifications[viewState.hostClassCat] = arr;
+                document.getElementById('hostNewClassItemInput').value = '';
                 await saveSystem();
                 render();
-                toast(`選択項目「${val}」を追加しました`);
+                toast(`選択肢「${val}」を追加しました`);
             });
 
             document.getElementById('hostClassItemsList').addEventListener('click', async (e) => {
+                if (!isHost()) return;
                 const b = e.target.closest('[data-del-hclass]');
-                if (!b || !isHost()) return;
-                sys.classifications[viewState.hostClassCat].splice(Number(b.dataset.delHclass), 1);
+                if (!b) return;
+                const idx = Number(b.dataset.delHclass);
+                sys.classifications[viewState.hostClassCat].splice(idx, 1);
                 await saveSystem();
                 render();
-                toast('選択項目を削除しました');
+                toast('選択肢を削除しました');
             });
 
             document.getElementById('hostFundamentalForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
+                if (!isHost()) return;
                 const db = getActiveDb();
-                if (!db || !isHost()) return;
+                if (!db) return;
                 db.title = document.getElementById('hostDbNameInput').value.trim() || db.title;
                 db.description = document.getElementById('hostDbDescInput').value.trim();
                 db.viewPassword = document.getElementById('hostDbViewPasswordInput').value.trim();
                 db.visibility = document.getElementById('hostDbVisibilitySelect').value;
-                db.schemaVersion = document.getElementById('hostSchemaVersionInput').value.trim() || '1.0.0';
+                db.schemaVersion = document.getElementById('hostSchemaVersionInput').value.trim() || db.schemaVersion;
                 await saveSystem();
                 render();
-                toast('DB設定・閲覧パスワードを保存しました');
+                toast('DB基本設定・閲覧パスワードを保存しました');
             });
 
-            // 新規登録用トークン（REG-）発行
             document.getElementById('generateRegInviteBtn').addEventListener('click', async () => {
                 if (!isHost()) return;
-                const token = `REG-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+                const token = `REG-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+                sys.invites = sys.invites || [];
                 sys.invites.unshift({
                     token,
                     purpose: 'register',
-                    label: `新規登録招待コード（登録直後は閲覧者） (${daysAgo(0)})`,
+                    label: '新規登録用トークン（登録直後は閲覧者）',
                     active: true,
                     singleUse: false,
                     usedBy: [],
@@ -3816,25 +4049,25 @@
                 });
                 await saveSystem();
                 render();
-                toast(`新規登録トークン ${token} を発行しました`);
+                toast(`新規登録用トークン「${token}」を発行しました`);
             });
 
-            // ゲスト書込許可トークン（INV-）発行
             document.getElementById('generateInviteBtn').addEventListener('click', async () => {
+                if (!isHost()) return;
                 const db = getActiveDb();
-                if (!isHost() || !db) return;
-                const token = `INV-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+                const token = `INV-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+                sys.invites = sys.invites || [];
                 sys.invites.unshift({
                     token,
                     purpose: 'write',
-                    label: `${db.title} 書き込み招待 (${daysAgo(0)})`,
+                    label: `${db ? db.title : '共有DB'} ゲスト書き込み招待`,
                     active: true,
-                    allowedDbIds: [db.id],
+                    allowedDbIds: db ? [db.id] : [],
                     createdAt: daysAgo(0)
                 });
                 await saveSystem();
                 render();
-                toast(`招待トークン ${token} を発行しました`);
+                toast(`書込許可トークン「${token}」を発行しました`);
             });
 
             document.getElementById('invitesList').addEventListener('click', async (e) => {
@@ -3845,209 +4078,246 @@
                     ta.value = cp.dataset.copyInvite;
                     document.body.appendChild(ta);
                     ta.select();
-                    try { document.execCommand('copy'); toast('コピーしました'); } catch (_) {}
+                    try { document.execCommand('copy'); toast('コピーしました'); } catch (_) { toast(cp.dataset.copyInvite); }
                     document.body.removeChild(ta);
                     return;
                 }
                 const tg = e.target.closest('[data-toggle-invite]');
                 if (tg) {
-                    const inv = sys.invites.find((x) => x.token === tg.dataset.toggleInvite);
-                    if (inv) { inv.active = !inv.active; await saveSystem(); render(); }
+                    const inv = (sys.invites || []).find((x) => x.token === tg.dataset.toggleInvite);
+                    if (inv) {
+                        inv.active = !inv.active;
+                        enforceTokenRevocationIfNeeded();
+                        await saveSystem();
+                        render();
+                        toast(inv.active ? 'トークンを有効化しました' : 'トークンを無効化し、関連権限を失効させました');
+                    }
+                    return;
+                }
+                const dl = e.target.closest('[data-del-invite]');
+                if (dl) {
+                    const tok = dl.dataset.delInvite;
+                    askConfirm('トークンの消去（権限失効）', `トークン「${tok}」を消去しますか？消去すると、このトークンで付与されていた権限も失効します。`, async () => {
+                        sys.invites = (sys.invites || []).filter((x) => x.token !== tok);
+                        // 該当トークン由来のゲストセッション権限を即座に失効
+                        if (redeemedInviteToken && redeemedInviteToken.toLowerCase() === tok.toLowerCase()) {
+                            redeemedInviteToken = '';
+                            localStorage.removeItem(INVITE_SESSION_KEY);
+                        }
+                        // 該当トークンで登録されたユーザーの記録からトークン参照を解除
+                        (sys.users || []).forEach((u) => {
+                            if (u.registeredWithToken && u.registeredWithToken.toLowerCase() === tok.toLowerCase()) {
+                                u.registeredWithToken = '';
+                            }
+                        });
+                        await saveSystem();
+                        render();
+                        toast(`トークン「${tok}」を消去し、権限を失効させました`);
+                    });
                 }
             });
 
             document.getElementById('hostExportAllBtn').addEventListener('click', () => {
-                downloadJsonFile(sys, `my_ramen_db_system_${daysAgo(0)}.json`);
-                toast('全体JSONをダウンロードしました');
+                downloadJsonFile({ exportedAt: new Date().toISOString(), system: sys }, `my-ramen-db-backup-${daysAgo(0)}.json`);
+                toast('全DBバックアップJSONをダウンロードしました');
             });
 
-            document.getElementById('hostImportAllInput').addEventListener('change', (e) => {
+            document.getElementById('hostImportAllInput').addEventListener('change', async (e) => {
+                if (!isHost()) return;
                 const f = e.target.files && e.target.files[0];
                 if (!f) return;
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    try {
-                        const data = JSON.parse(ev.target.result);
-                        if (!data || !Array.isArray(data.databases)) throw new Error('databases配列が必要です');
-                        askConfirm('全体JSONの復元', '現在のクラウドシステムデータをJSONの内容で上書きしますか？', async () => {
-                            mergeSystemPayload(data);
-                            viewState.activeDbId = sys.databases[0] ? sys.databases[0].id : null;
-                            await saveSystem();
-                            render();
-                            toast('JSONから復元しました');
-                        });
-                    } catch (err) {
-                        toast(`読込エラー: ${err.message}`, true);
-                    } finally {
-                        e.target.value = '';
+                try {
+                    const parsed = JSON.parse(await f.text());
+                    const payload = parsed.system || parsed;
+                    if (!payload || !Array.isArray(payload.databases)) {
+                        toast('バックアップJSONの形式が正しくありません', true);
+                        return;
                     }
-                };
-                reader.readAsText(f);
+                    mergeSystemPayload(payload);
+                    viewState.activeDbId = sys.databases[0] ? sys.databases[0].id : null;
+                    await saveSystem();
+                    render();
+                    toast('バックアップから復元しました');
+                } catch (_) { toast('JSONの読み込みに失敗しました', true); }
+                e.target.value = '';
             });
 
-            // ホスト限定：機能パッチ一覧の有効/無効・削除
+            document.querySelectorAll('[data-preset-patch]').forEach((btn) => {
+                btn.addEventListener('click', async () => {
+                    if (!isHost()) return;
+                    await runPatchOnActiveDb({ patchId: btn.dataset.presetPatch });
+                });
+            });
+
+            document.getElementById('insertSampleJsPatchBtn').addEventListener('click', () => {
+                document.getElementById('customPatchJsonInput').value = buildJsPatchTemplate();
+                toast('JSパッチ雛形を挿入しました');
+            });
+
             document.getElementById('installedFeaturePatchesList').addEventListener('click', async (e) => {
                 if (!isHost()) return;
-                const tog = e.target.closest('[data-toggle-fpatch]');
-                if (tog) {
-                    const fp = (sys.featurePatches || []).find((x) => x.id === tog.dataset.toggleFpatch);
+                const tg = e.target.closest('[data-toggle-fpatch]');
+                if (tg) {
+                    const fp = (sys.featurePatches || []).find((x) => x.id === tg.dataset.toggleFpatch);
                     if (fp) {
                         fp.enabled = fp.enabled === false ? true : false;
                         await saveSystem();
                         render();
-                        toast(`機能パッチ「${fp.title}」を${fp.enabled ? '有効' : '無効'}にしました`);
+                        toast(fp.enabled ? `機能パッチ「${fp.title}」を有効化しました` : `機能パッチ「${fp.title}」を無効化しました`);
                     }
                     return;
                 }
-                const del = e.target.closest('[data-del-fpatch]');
-                if (del) {
-                    sys.featurePatches = (sys.featurePatches || []).filter((x) => x.id !== del.dataset.delFpatch);
-                    await saveSystem();
-                    render();
-                    toast('機能パッチを削除しました');
+                const dl = e.target.closest('[data-del-fpatch]');
+                if (dl) {
+                    const fp = (sys.featurePatches || []).find((x) => x.id === dl.dataset.delFpatch);
+                    if (!fp) return;
+                    askConfirm('機能パッチの削除', `導入済み機能パッチ「${fp.title}」を削除しますか？`, async () => {
+                        sys.featurePatches = (sys.featurePatches || []).filter((x) => x.id !== fp.id);
+                        await saveSystem();
+                        render();
+                        toast(`機能パッチ「${fp.title}」を削除しました`);
+                    });
                 }
             });
 
-            // パッチ画面操作
-            document.getElementById('downloadDbPatchBtn').addEventListener('click', () => {
-                const db = getActiveDb();
-                if (!db || !isHost()) return;
-                const patchPayload = {
-                    patchId: `patch-${db.id}-${daysAgo(0)}`,
-                    title: `${db.title} 機能・構成パッチ`,
-                    schemaVersion: db.schemaVersion || '1.0.0',
-                    exportedAt: new Date().toISOString(),
-                    featurePatches: clone(sys.featurePatches || []),
-                    classifications: clone(sys.classifications),
-                    customFields: clone(sys.customFields),
-                    targetDbSnapshot: {
-                        id: db.id,
-                        title: db.title,
-                        shopsCount: (db.shops || []).length,
-                        visitsCount: (db.visits || []).length
-                    }
-                };
-                downloadJsonFile(patchPayload, `ramen_patch_${db.id}_${daysAgo(0)}.json`);
-                toast('パッチJSONファイルをダウンロードしました');
+            document.getElementById('loadPatchFileInput').addEventListener('change', async (e) => {
+                const f = e.target.files && e.target.files[0];
+                if (!f) return;
+                try {
+                    document.getElementById('customPatchJsonInput').value = await f.text();
+                    toast(`パッチファイル「${f.name}」を読み込みました`);
+                } catch (_) { toast('ファイルの読み込みに失敗しました', true); }
+                e.target.value = '';
             });
 
             document.getElementById('downloadCustomPatchTextareaBtn').addEventListener('click', () => {
+                const raw = document.getElementById('customPatchJsonInput').value.trim();
+                const content = raw || buildJsPatchTemplate();
+                let pid = 'patch-js-custom';
+                try {
+                    const parsed = parseJsOrJsonPatchInput(content);
+                    if (parsed && parsed.patchId) pid = String(parsed.patchId);
+                } catch (_) {}
+                downloadFile(content, `${pid}.js`, 'application/javascript');
+                toast(`${pid}.js をダウンロードしました`);
+            });
+
+            document.getElementById('applyCustomPatchBtn').addEventListener('click', async () => {
                 if (!isHost()) return;
                 const raw = document.getElementById('customPatchJsonInput').value.trim();
-                if (!raw) {
-                    toast('ダウンロードするパッチJSONを入力してください', true);
-                    return;
-                }
+                if (!raw) { toast('JSパッチまたはJSONを入力してください', true); return; }
                 try {
-                    const parsed = JSON.parse(raw);
-                    downloadJsonFile(parsed, `${parsed.patchId || 'custom_patch'}_${daysAgo(0)}.json`);
-                    toast('パッチJSONをダウンロードしました');
+                    const patchObj = parseJsOrJsonPatchInput(raw);
+                    await runPatchOnActiveDb(patchObj);
                 } catch (err) {
-                    toast(`JSON形式エラー: ${err.message}`, true);
+                    toast(`JSパッチの解析・実行に失敗しました: ${err.message}`, true);
                 }
             });
 
-            document.getElementById('loadPatchFileInput').addEventListener('change', (e) => {
-                const f = e.target.files && e.target.files[0];
-                if (!f) return;
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    document.getElementById('customPatchJsonInput').value = ev.target.result;
-                    toast('パッチJSONファイルを読み込みました');
-                    e.target.value = '';
-                };
-                reader.readAsText(f);
-            });
-
-            document.querySelectorAll('[data-preset-patch]').forEach((btn) => {
-                btn.addEventListener('click', () => {
-                    const pid = btn.dataset.presetPatch;
-                    runPatchOnActiveDb({ patchId: pid });
-                });
-            });
-
-            document.getElementById('applyCustomPatchBtn').addEventListener('click', () => {
-                const raw = document.getElementById('customPatchJsonInput').value.trim();
-                if (!raw) { toast('JSONパッチを入力してください', true); return; }
-                try {
-                    const parsed = JSON.parse(raw);
-                    if (!parsed || typeof parsed !== 'object') throw new Error('JSONオブジェクトを指定してください');
-                    runPatchOnActiveDb(parsed);
-                } catch (err) {
-                    toast(`パッチJSONエラー: ${err.message}`, true);
-                }
-            });
-
-            document.getElementById('rollbackPatchBtn').addEventListener('click', () => {
+            document.getElementById('downloadDbPatchBtn').addEventListener('click', () => {
                 const db = getActiveDb();
-                if (!db || !isHost()) return;
-                if (!db.lastSnapshot) {
-                    toast('ロールバック可能なスナップショットがありません', true);
+                if (!db) return;
+                const patchId = `patch-db-${db.id}-${daysAgo(0)}`;
+                const jsContent = `export const patch = {
+  patchId: ${JSON.stringify(patchId)},
+  title: ${JSON.stringify(`${db.title} 構成JSパッチ`)},
+  schemaVersion: ${JSON.stringify(db.schemaVersion || '1.0.0')},
+  patchNote: ${JSON.stringify(`${db.title} の現在のスキーマ・分類・機能フラグ構成をエクスポートしたパッチ`)},
+  featureFlags: ${JSON.stringify(Object.assign({}, ...(sys.featurePatches || []).filter((p) => p.enabled !== false).map((p) => p.featureFlags || {})))},
+  classifications: ${JSON.stringify(sys.classifications || {})},
+  customFields: ${JSON.stringify(sys.customFields || [])}
+};`;
+                downloadFile(jsContent, `${patchId}.js`, 'application/javascript');
+                toast('現在の構成をJSパッチファイルとしてダウンロードしました');
+            });
+
+            document.getElementById('rollbackPatchBtn').addEventListener('click', async () => {
+                if (!isHost()) return;
+                const db = getActiveDb();
+                if (!db || !db.lastSnapshot) {
+                    toast('復元できる直前スナップショットがありません', true);
                     return;
                 }
-                askConfirm('ロールバック実行', `スナップショット（${db.lastSnapshot.savedAt}）の状態へ戻しますか？`, async () => {
-                    db.schemaVersion = db.lastSnapshot.schemaVersion;
-                    db.shops = clone(db.lastSnapshot.shops);
-                    db.visits = clone(db.lastSnapshot.visits);
+                askConfirm('パッチのロールバック', `スナップショット（${db.lastSnapshot.savedAt}）の状態に戻しますか？`, async () => {
+                    db.schemaVersion = db.lastSnapshot.schemaVersion || db.schemaVersion;
+                    db.shops = clone(db.lastSnapshot.shops || []);
+                    db.visits = clone(db.lastSnapshot.visits || []);
+                    db.lastSnapshot = null;
                     await saveSystem();
                     render();
-                    toast('直前スナップショットへ復元しました');
+                    toast('直前スナップショットへロールバックしました');
                 });
             });
 
             document.getElementById('confirmDialogCancelBtn').addEventListener('click', closeConfirmDialog);
-            document.getElementById('confirmDialogOkBtn').addEventListener('click', () => {
+            document.getElementById('confirmDialogOkBtn').addEventListener('click', async () => {
                 const fn = pendingConfirmAction;
                 closeConfirmDialog();
-                if (typeof fn === 'function') fn();
+                if (typeof fn === 'function') await fn();
             });
         }
 
-        async function bootstrapApp() {
-            const localBackup = loadLocalFallback();
-            if (localBackup) mergeSystemPayload(localBackup);
-            applyUrlParams();
-            bindEvents();
-            render();
+        function startRealtimeSync() {
+            setSyncStatus('saving', 'クラウド接続中...');
 
             onAuthStateChanged(auth, async (user) => {
-                currentAuthUser = user;
                 if (!user) {
                     try {
                         await signInAnonymously(auth);
                     } catch (e) {
-                        console.error('匿名ログインエラー:', e);
+                        console.error('匿名認証エラー:', e);
+                        setSyncStatus('error', '認証エラー');
                     }
-                } else if (!user.isAnonymous && user.email) {
+                    return;
+                }
+                currentAuthUser = user;
+                if (!user.isAnonymous && user.email) {
                     await ensureUserRegisteredInSystem(user, '');
                 }
                 render();
             });
 
-            onSnapshot(
-                SYSTEM_DOC_REF,
-                async (snap) => {
-                    if (snap.exists()) {
-                        mergeSystemPayload(snap.data());
-                        if (currentAuthUser && !currentAuthUser.isAnonymous) {
-                            await ensureUserRegisteredInSystem(currentAuthUser, '');
-                        }
-                        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(sys)); } catch (_) {}
-                        setSyncStatus('synced', 'クラウド同期済');
-                        render();
-                    } else {
-                        await saveSystem();
+            onSnapshot(SYSTEM_DOC_REF, (snap) => {
+                if (snap.exists()) {
+                    const cloudData = snap.data();
+                    mergeSystemPayload(cloudData);
+                    if (!viewState.activeDbId && sys.databases[0]) {
+                        viewState.activeDbId = sys.databases[0].id;
                     }
-                },
-                (err) => {
-                    console.error('Firestore購読エラー:', err);
-                    setSyncStatus('error', '同期オフライン');
-                    toast('クラウドデータの取得に失敗しました', true);
+                    applyUrlParams();
+                    render();
+                    setSyncStatus('synced', 'クラウド同期済');
+                } else {
+                    const local = loadLocalFallback();
+                    if (local) {
+                        mergeSystemPayload(local);
+                    }
+                    if (!viewState.activeDbId && sys.databases[0]) {
+                        viewState.activeDbId = sys.databases[0].id;
+                    }
+                    applyUrlParams();
+                    render();
+                    if (auth.currentUser) {
+                        saveSystem();
+                    } else {
+                        setSyncStatus('synced', '初期データ準備済');
+                    }
                 }
-            );
+            }, (err) => {
+                console.error('Firestore購読エラー:', err);
+                const local = loadLocalFallback();
+                if (local) {
+                    mergeSystemPayload(local);
+                    applyUrlParams();
+                    render();
+                }
+                setSyncStatus('error', 'オフライン/権限確認');
+            });
         }
 
-        bootstrapApp();
+        bindEvents();
+        render();
+        startRealtimeSync();
     </script>
 </body>
 </html>
