@@ -925,14 +925,14 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label for="sAreaInput" class="block text-xs font-bold text-stone-700 mb-1">エリア</label>
-                            <input id="sAreaInput" type="text" placeholder="例: 東京都千代田区" class="w-full px-3.5 py-2 bg-ramen-cream/50 border border-stone-300 rounded-xl text-sm">
+                            <input id="sAreaInput" type="text" placeholder="例: 茨城県古河市" class="w-full px-3.5 py-2 bg-ramen-cream/50 border border-stone-300 rounded-xl text-sm">
                         </div>
                         <div>
                             <div class="flex items-center justify-between mb-1">
                                 <label for="sAddressInput" class="text-xs font-bold text-stone-700">住所</label>
                                 <a id="sMapPreviewLink" href="#" target="_blank" rel="noopener noreferrer" class="hidden text-[11px] font-bold text-sky-700 hover:underline">Googleマップ</a>
                             </div>
-                            <input id="sAddressInput" type="text" placeholder="例: 東京都千代田区丸の内1-1-1" class="w-full px-3.5 py-2 bg-ramen-cream/50 border border-stone-300 rounded-xl text-sm">
+                            <input id="sAddressInput" type="text" placeholder="例: 茨城県古河市中央町1-1-1" class="w-full px-3.5 py-2 bg-ramen-cream/50 border border-stone-300 rounded-xl text-sm">
                         </div>
                     </div>
                     <div>
@@ -2554,6 +2554,7 @@
                 renderLobby();
                 renderLobbyPatchNotes();
                 runAutoJsPatches(null);
+                runBundledPatches111To116(null);
                 return;
             }
 
@@ -2625,6 +2626,7 @@
             else if (viewState.dbTab === 'patch') renderPatchView(db);
 
             runAutoJsPatches(db);
+            runBundledPatches111To116(db);
         }
 
         function renderCustomFieldInputs(target, containerId, valuesObj) {
@@ -3078,8 +3080,8 @@
                     id: demoShopId,
                     name: 'パッチ追加サンプル中華そば',
                     genre: '醤油',
-                    area: '東京都千代田区',
-                    address: '東京都千代田区丸の内1-1-1',
+                    area: '茨城県古河市',
+                    address: '茨城県古河市中央町1-1',
                     description: 'パッチ機能で追加されたサンプル店舗です。',
                     orderMethod: '食券先買い（列並ぶ前に）',
                     paymentMethods: ['現金'],
@@ -4150,7 +4152,2144 @@
             });
         }
 
-        function initApp() {
+        
+        function runBundledPatches111To116(db) {
+            if (typeof sys === 'undefined' || typeof viewState === 'undefined') return;
+            const ctxObj = {
+                sys,
+                db: db || (typeof getActiveDb === 'function' ? getActiveDb() : null),
+                viewState,
+                toast: typeof toast === 'function' ? toast : () => {},
+                render: typeof render === 'function' ? render : () => {},
+                saveSystem: typeof saveSystem === 'function' ? saveSystem : async () => {},
+                esc: typeof esc === 'function' ? esc : (s) => String(s ?? ''),
+                clone: typeof clone === 'function' ? clone : (o) => JSON.parse(JSON.stringify(o)),
+                daysAgo: typeof daysAgo === 'function' ? daysAgo : () => ''
+            };
+            try {
+                (function(ctx) {
+const sys = ctx.sys;
+const toast = ctx.toast;
+const render = ctx.render;
+const saveSystem = ctx.saveSystem;
+const esc = ctx.esc;
+
+sys.releaseNotes = Array.isArray(sys.releaseNotes) ? sys.releaseNotes : [];
+
+// v1.1.1 のリリースノートが未登録なら先頭に追加
+if (!sys.releaseNotes.some((n) => n.version === 'v1.1.1')) {
+    sys.releaseNotes.unshift({
+        version: 'v1.1.1',
+        date: new Date().toISOString().slice(0, 10),
+        title: 'コンパクト開閉式パッチノート＆ホスト限定編集機能を追加',
+        items: [
+            'ロビー画面のパッチノートをボタン開閉式のコンパクト表示（内部スクロール対応・適用履歴は非表示）に変更',
+            'ホスト画面（ホスト設定タブ）からパッチノートの追加・文言編集・削除が可能に'
+        ]
+    });
+}
+
+// =========================================================
+// 1. ロビー画面：パッチノート（リリースノートのみ・開閉式・スクロール対応）
+// =========================================================
+const lobbyPatchBox = document.getElementById('lobbyPatchNotesList');
+const lobbyPatchSection = lobbyPatchBox?.closest('.bg-white');
+const lobbyPatchBadge = document.getElementById('lobbyPatchCountBadge');
+
+if (lobbyPatchBox && lobbyPatchSection) {
+    let toggleBtn = document.getElementById('togglePatchNotesCompactBtn');
+    let latestPreview = document.getElementById('latestPatchCompactPreview');
+
+    if (!toggleBtn) {
+        const headerRow = lobbyPatchBadge?.parentElement;
+        if (headerRow) {
+            const rightWrap = document.createElement('div');
+            rightWrap.className = 'flex items-center gap-2 shrink-0 flex-wrap';
+
+            lobbyPatchBadge.parentNode.insertBefore(rightWrap, lobbyPatchBadge);
+            rightWrap.appendChild(lobbyPatchBadge);
+
+            toggleBtn = document.createElement('button');
+            toggleBtn.id = 'togglePatchNotesCompactBtn';
+            toggleBtn.type = 'button';
+            toggleBtn.className = 'px-3 py-1.5 bg-ramen-black hover:bg-ramen-red text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm';
+            rightWrap.appendChild(toggleBtn);
+        }
+
+        latestPreview = document.createElement('div');
+        latestPreview.id = 'latestPatchCompactPreview';
+        latestPreview.className = 'bg-ramen-cream/80 border border-stone-200 rounded-2xl px-3.5 py-2.5 flex items-center justify-between gap-2 text-xs';
+        lobbyPatchSection.insertBefore(latestPreview, lobbyPatchBox);
+
+        window.__patchNotesExpanded = false;
+        lobbyPatchBox.classList.add('hidden');
+
+        toggleBtn.addEventListener('click', () => {
+            window.__patchNotesExpanded = !window.__patchNotesExpanded;
+            updateCompactState();
+        });
+    }
+
+    const notes = sys.releaseNotes || [];
+    if (lobbyPatchBadge) {
+        lobbyPatchBadge.textContent = `全${notes.length}件`;
+    }
+
+    if (latestPreview) {
+        const latest = notes[0];
+        if (latest) {
+            latestPreview.innerHTML = `
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="text-[10px] font-black bg-ramen-red text-white px-2 py-0.5 rounded-full shrink-0">最新 ${esc(latest.version)}</span>
+                    <span class="font-bold text-ramen-black truncate">${esc(latest.title)}</span>
+                </div>
+                <span class="text-[11px] text-stone-400 shrink-0">${esc(latest.date || '')}</span>
+            `;
+        } else {
+            latestPreview.innerHTML = `<span class="text-stone-400">パッチノートはまだありません</span>`;
+        }
+    }
+
+    // パッチ適用履歴は入れず、リリースノートのみをスクロール表示
+    lobbyPatchBox.innerHTML = `
+        <div class="max-h-72 overflow-y-auto pr-1 space-y-2.5">
+            ${notes.map((n) => `
+                <div class="p-3 rounded-2xl bg-ramen-cream/70 border border-stone-200 space-y-1">
+                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                        <div class="flex items-center gap-2">
+                            <span class="font-mono text-[11px] font-black bg-ramen-red text-white px-2.5 py-0.5 rounded-full">${esc(n.version)}</span>
+                            <strong class="text-xs sm:text-sm font-black text-ramen-black">${esc(n.title)}</strong>
+                        </div>
+                        <span class="text-[11px] font-bold text-stone-400">${esc(n.date || '')}</span>
+                    </div>
+                    <ul class="list-disc list-inside text-stone-700 space-y-0.5 pl-1 text-xs">
+                        ${(n.items || []).map((it) => `<li>${esc(it)}</li>`).join('')}
+                    </ul>
+                </div>
+            `).join('')}
+        </div>
+    `;
+
+    function updateCompactState() {
+        const isOpen = Boolean(window.__patchNotesExpanded);
+        lobbyPatchBox.classList.toggle('hidden', !isOpen);
+        if (latestPreview) {
+            latestPreview.classList.toggle('hidden', isOpen);
+        }
+        if (toggleBtn) {
+            toggleBtn.innerHTML = isOpen
+                ? '<i class="fa-solid fa-chevron-up"></i><span>閉じる</span>'
+                : '<i class="fa-solid fa-chevron-down"></i><span>履歴を見る</span>';
+        }
+    }
+
+    updateCompactState();
+}
+
+// =========================================================
+// 2. ホスト設定タブ：ホスト限定のパッチノート編集機能
+// =========================================================
+const hostTabBtn = document.getElementById('navTabHostBtn');
+const subviewHost = document.getElementById('subviewHost');
+if (!subviewHost) return;
+
+const isHostNow = Boolean(hostTabBtn && !hostTabBtn.classList.contains('hidden'));
+
+if (!isHostNow) {
+    const oldPanel = document.getElementById('hostReleaseNotesEditorCard');
+    if (oldPanel) oldPanel.remove();
+    return;
+}
+
+let card = document.getElementById('hostReleaseNotesEditorCard');
+if (!card) {
+    card = document.createElement('div');
+    card.id = 'hostReleaseNotesEditorCard';
+    card.className = 'bg-white rounded-3xl p-5 shadow-sm border border-stone-200/90 space-y-4';
+    const anchor = document.getElementById('registeredUsersManagerList')?.closest('.bg-white');
+    if (anchor && anchor.parentNode) {
+        anchor.parentNode.insertBefore(card, anchor.nextSibling);
+    } else {
+        subviewHost.appendChild(card);
+    }
+}
+
+function renderEditor() {
+    card.innerHTML = `
+        <div class="flex items-center justify-between gap-2 border-b border-stone-100 pb-2">
+            <h4 class="text-base font-black text-ramen-black flex items-center gap-2">
+                <i class="fa-solid fa-pen-nib text-ramen-red"></i>
+                <span>パッチノート編集（ホスト限定・v1.1.1）</span>
+            </h4>
+            <span class="text-[11px] font-bold text-stone-400">変更はクラウドへ即時保存</span>
+        </div>
+        <form id="rnAddForm" class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 bg-ramen-cream/70 p-3.5 rounded-2xl border border-stone-200 text-xs">
+            <input id="rnNewVer" type="text" required placeholder="バージョン（例: v1.1.2）" class="px-3 py-2 bg-white border border-stone-300 rounded-xl font-mono font-bold">
+            <input id="rnNewDate" type="date" value="${new Date().toISOString().slice(0, 10)}" class="px-3 py-2 bg-white border border-stone-300 rounded-xl">
+            <input id="rnNewTitle" type="text" required placeholder="見出し・タイトル" class="px-3 py-2 bg-white border border-stone-300 rounded-xl font-bold">
+            <textarea id="rnNewItems" rows="2" placeholder="箇条書き（1行につき1項目）" class="sm:col-span-3 px-3 py-2 bg-white border border-stone-300 rounded-xl"></textarea>
+            <button type="submit" class="sm:col-span-3 py-2 bg-ramen-black hover:bg-stone-800 text-white rounded-xl font-bold transition">パッチノートを追加</button>
+        </form>
+        <div id="rnEditorItems" class="space-y-3 text-xs max-h-96 overflow-y-auto pr-1">
+            ${sys.releaseNotes.map((n, idx) => `
+                <div data-rn-idx="${idx}" class="p-3.5 rounded-2xl bg-stone-50 border border-stone-200 space-y-2">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <input type="text" data-rn-ver value="${esc(n.version || '')}" placeholder="バージョン" class="px-2.5 py-1.5 bg-white border rounded-xl font-mono font-bold">
+                        <input type="text" data-rn-date value="${esc(n.date || '')}" placeholder="日付" class="px-2.5 py-1.5 bg-white border rounded-xl">
+                        <input type="text" data-rn-title value="${esc(n.title || '')}" placeholder="タイトル" class="px-2.5 py-1.5 bg-white border rounded-xl font-bold">
+                    </div>
+                    <textarea data-rn-items rows="3" placeholder="1行につき1項目" class="w-full px-2.5 py-1.5 bg-white border rounded-xl">${esc((n.items || []).join('\n'))}</textarea>
+                    <div class="flex justify-end gap-2">
+                        <button type="button" data-rn-save="${idx}" class="px-3 py-1.5 bg-ramen-red hover:bg-red-600 text-white rounded-xl font-bold">この項目を保存</button>
+                        <button type="button" data-rn-del="${idx}" class="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-ramen-darkRed rounded-xl font-bold">削除</button>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+
+    const addForm = card.querySelector('#rnAddForm');
+    if (addForm && !addForm.dataset.bound) {
+        addForm.dataset.bound = '1';
+        addForm.addEventListener('submit', async (ev) => {
+            ev.preventDefault();
+            const ver = card.querySelector('#rnNewVer').value.trim();
+            const dt = card.querySelector('#rnNewDate').value.trim();
+            const ttl = card.querySelector('#rnNewTitle').value.trim();
+            const items = card.querySelector('#rnNewItems').value.split('\n').map((s) => s.trim()).filter(Boolean);
+            if (!ver || !ttl) return;
+            sys.releaseNotes.unshift({ version: ver, date: dt, title: ttl, items });
+            await saveSystem();
+            render();
+            renderEditor();
+            toast('パッチノートを追加しました');
+        });
+    }
+
+    if (!card.dataset.listBound) {
+        card.dataset.listBound = '1';
+        card.addEventListener('click', async (ev) => {
+            const saveBtn = ev.target.closest('[data-rn-save]');
+            if (saveBtn) {
+                const idx = Number(saveBtn.dataset.rnSave);
+                const box = card.querySelector(`[data-rn-idx="${idx}"]`);
+                if (!box || !sys.releaseNotes[idx]) return;
+                sys.releaseNotes[idx].version = box.querySelector('[data-rn-ver]').value.trim();
+                sys.releaseNotes[idx].date = box.querySelector('[data-rn-date]').value.trim();
+                sys.releaseNotes[idx].title = box.querySelector('[data-rn-title]').value.trim();
+                sys.releaseNotes[idx].items = box.querySelector('[data-rn-items]').value.split('\n').map((s) => s.trim()).filter(Boolean);
+                await saveSystem();
+                render();
+                renderEditor();
+                toast('パッチノートを更新しました');
+                return;
+            }
+            const delBtn = ev.target.closest('[data-rn-del]');
+            if (delBtn) {
+                const idx = Number(delBtn.dataset.rnDel);
+                sys.releaseNotes.splice(idx, 1);
+                await saveSystem();
+                render();
+                renderEditor();
+                toast('パッチノートを削除しました');
+            }
+        });
+    }
+}
+
+renderEditor();
+
+                })(ctxObj);
+            } catch (err) {
+                console.error('同梱パッチ実行エラー (db88_patch_1.1.1.js):', err);
+            }
+            try {
+                (function(ctx) {
+const { toast } = ctx;
+
+const loggedInBox = document.getElementById('authLoggedInBox');
+if (!loggedInBox) return;
+
+if (!document.getElementById('changeAccountPasswordBox')) {
+    const box = document.createElement('div');
+    box.id = 'changeAccountPasswordBox';
+    box.className = 'pt-2.5 mt-2.5 border-t border-emerald-200 space-y-2 text-xs';
+    box.innerHTML = `
+        <p class="font-black text-emerald-950 flex items-center gap-1.5">
+            <i class="fa-solid fa-lock text-emerald-700"></i>
+            <span>ログインパスワードの変更</span>
+        </p>
+        <input id="currentAccountPassInput" type="password" placeholder="現在のパスワード（再認証が必要な場合に利用）" class="w-full px-3 py-1.5 bg-white border border-emerald-300 rounded-xl text-xs">
+        <div class="flex gap-2">
+            <input id="newAccountPassInput" type="password" minlength="6" placeholder="新しいパスワード（6文字以上）" class="flex-grow px-3 py-1.5 bg-white border border-emerald-300 rounded-xl text-xs">
+            <button id="execChangeAccountPassBtn" type="button" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-bold shrink-0 transition">
+                変更
+            </button>
+        </div>
+    `;
+    loggedInBox.appendChild(box);
+}
+
+const btn = document.getElementById('execChangeAccountPassBtn');
+if (btn && !btn.dataset.bound) {
+    btn.dataset.bound = '1';
+    btn.addEventListener('click', async () => {
+        const curPass = document.getElementById('currentAccountPassInput')?.value || '';
+        const newPass = document.getElementById('newAccountPassInput')?.value || '';
+
+        if (newPass.length < 6) {
+            toast('新しいパスワードは6文字以上で入力してください', true);
+            return;
+        }
+
+        try {
+            const authMod = await import('https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js');
+            const authInst = authMod.getAuth();
+            const user = authInst && authInst.currentUser;
+
+            if (!user || user.isAnonymous || !user.email) {
+                toast('メール/パスワードでログイン中のアカウントがありません', true);
+                return;
+            }
+
+            try {
+                await authMod.updatePassword(user, newPass);
+            } catch (err) {
+                if (err && err.code === 'auth/requires-recent-login') {
+                    if (!curPass) {
+                        toast('再認証のため「現在のパスワード」を入力してもう一度押してください', true);
+                        return;
+                    }
+                    const cred = authMod.EmailAuthProvider.credential(user.email, curPass);
+                    await authMod.reauthenticateWithCredential(user, cred);
+                    await authMod.updatePassword(user, newPass);
+                } else {
+                    throw err;
+                }
+            }
+
+            document.getElementById('currentAccountPassInput').value = '';
+            document.getElementById('newAccountPassInput').value = '';
+            toast('ログインパスワードを変更しました');
+        } catch (err) {
+            console.error('パスワード変更エラー:', err);
+            toast(`パスワード変更に失敗しました: ${err.message || err}`, true);
+        }
+    });
+}
+
+                })(ctxObj);
+            } catch (err) {
+                console.error('同梱パッチ実行エラー (db88_patch_1.1.2.js):', err);
+            }
+            try {
+                (function(ctx) {
+const { sys, viewState, toast, saveSystem, render, esc } = ctx;
+
+window.__db88OwnerFixV6 = true;
+
+const findCurrentDb = () => (sys.databases || []).find((d) => d.id === viewState.activeDbId) || null;
+
+const hasDbWriteAccess = (db) => {
+    if (!db) return false;
+    const hostTab = document.getElementById('navTabHostBtn');
+    if (hostTab && !hostTab.classList.contains('hidden')) return true;
+    const pill = document.getElementById('activeDbPermissionPill');
+    return Boolean(pill && pill.textContent.includes('書き込み許可あり'));
+};
+
+const ensureOwnerInputBox = (db) => {
+    const form = document.getElementById('dbOwnerSettingsForm');
+    const titleInput = document.getElementById('editDbTitleInput');
+    if (!form || !titleInput || !db) return;
+
+    ['v2OwnerNameWrap', 'v3OwnerFieldWrap', 'v4OwnerFieldWrap', 'v5OwnerFieldWrap', 'editDbOwnerNameWrap'].forEach((id) => {
+        document.getElementById(id)?.remove();
+    });
+
+    let box = document.getElementById('v6OwnerFieldWrap');
+    if (!box) {
+        box = document.createElement('div');
+        box.id = 'v6OwnerFieldWrap';
+        titleInput.parentElement.insertAdjacentElement('afterend', box);
+    }
+
+    const writable = hasDbWriteAccess(db);
+    box.innerHTML = `
+        <label for="v6OwnerNameInput" class="block font-bold text-stone-700 mb-1">オーナー表示名</label>
+        <input id="v6OwnerNameInput" type="text" value="${esc(db.ownerName || '')}" ${writable ? '' : 'disabled'}
+            class="w-full px-3.5 py-2 border rounded-xl text-sm font-bold ${
+                writable ? 'bg-ramen-cream/60 border-stone-300 text-ramen-black' : 'bg-stone-100 border-stone-200 text-stone-400'
+            }">
+        <p id="v6OwnerStatusMsg" class="text-[11px] mt-1 ${writable ? 'text-emerald-700 font-bold' : 'text-stone-400'}">
+            ${writable ? '※ 書き込み許可があるDBのため変更できます' : '※ 書き込み権限がないDBのため変更できません'}
+        </p>
+    `;
+};
+
+const syncOwnerUi = () => {
+    const db = findCurrentDb();
+    if (!db) return;
+
+    const settingsBtn = document.getElementById('openDbSettingsModalBtn');
+    if (settingsBtn && hasDbWriteAccess(db)) {
+        settingsBtn.classList.remove('hidden');
+    }
+
+    const badge = document.getElementById('activeDbBadge');
+    if (badge) {
+        badge.textContent = `オーナー: ${db.ownerName || '未設定'}`;
+    }
+};
+
+const settingsTrigger = document.getElementById('openDbSettingsModalBtn');
+if (settingsTrigger) {
+    settingsTrigger.onclick = () => {
+        document.getElementById('dbOwnerSettingsModal')?.classList.remove('hidden');
+        const db = findCurrentDb();
+        if (db) {
+            document.getElementById('editDbTitleInput').value = db.title || '';
+            document.getElementById('editDbDescInput').value = db.description || '';
+            document.getElementById('editDbViewPasswordInput').value = db.viewPassword || '';
+            ensureOwnerInputBox(db);
+        }
+    };
+}
+
+const ownerFormEl = document.getElementById('dbOwnerSettingsForm');
+if (ownerFormEl) {
+    ownerFormEl.onsubmit = async (e) => {
+        e.preventDefault();
+        const db = findCurrentDb();
+        if (!db) return;
+
+        if (!hasDbWriteAccess(db)) {
+            toast('このDBのオーナー名を変更する権限がありません', true);
+            return;
+        }
+
+        const ownerInp = document.getElementById('v6OwnerNameInput');
+        const nextOwner = ownerInp ? ownerInp.value.trim() : '';
+        if (ownerInp && !ownerInp.disabled && nextOwner) {
+            db.ownerName = nextOwner;
+        }
+
+        const titleInp = document.getElementById('editDbTitleInput');
+        const descInp = document.getElementById('editDbDescInput');
+        const pwInp = document.getElementById('editDbViewPasswordInput');
+
+        if (titleInp && titleInp.value.trim()) db.title = titleInp.value.trim();
+        if (descInp) db.description = descInp.value.trim();
+        if (pwInp) db.viewPassword = pwInp.value.trim();
+
+        await saveSystem();
+        document.getElementById('dbOwnerSettingsModal')?.classList.add('hidden');
+        if (typeof render === 'function') render();
+        syncOwnerUi();
+        toast(`オーナー名を「${db.ownerName}」に更新しました`);
+    };
+}
+
+syncOwnerUi();
+toast('オーナー名変更パッチv6を適用しました');
+
+                })(ctxObj);
+            } catch (err) {
+                console.error('同梱パッチ実行エラー (db88_patch_1.1.3.js):', err);
+            }
+            try {
+                (function(ctx) {
+const { sys, viewState, toast, saveSystem, esc } = ctx;
+
+if (!window.__db88Patch114Notified) {
+    window.__db88Patch114Notified = true;
+    sys.releaseNotes = Array.isArray(sys.releaseNotes) ? sys.releaseNotes : [];
+    if (!sys.releaseNotes.some((n) => n.version === 'v1.1.4')) {
+        sys.releaseNotes.unshift({
+            version: 'v1.1.4',
+            date: new Date().toISOString().slice(0, 10),
+            title: '店舗編集時のジャンル複数選択保持・二重タグ解消・SNS/公式リンク4枠対応・モーダル背面スクロール抑制',
+            items: [
+                '店舗マスタ編集・新規登録でジャンル・系統の複数選択が保持されるよう修正',
+                'ジャンル・系統タグの二重表示を解消',
+                '公式・SNSリンクを最大4つまで登録・表示可能に拡張',
+                'モーダル表示中の背面スクロールを抑止（モーダル内部の操作は阻害しない安全設計）'
+            ]
+        });
+    }
+    if (typeof toast === 'function') {
+        toast('Patch 1.1.4 を適用しました');
+    }
+}
+
+const getDb = () => (sys.databases || []).find((d) => d.id === viewState.activeDbId) || null;
+const normGenre = (v) => String(v || '').trim().replace(/\s+/g, ' ');
+
+const getMasterGenres = () => {
+    const raw = (sys.classifications && Array.isArray(sys.classifications.genres))
+        ? sys.classifications.genres
+        : [];
+    const seen = new Set();
+    const out = [];
+    raw.forEach((g) => {
+        const s = normGenre(g);
+        if (s && !seen.has(s)) {
+            seen.add(s);
+            out.push(s);
+        }
+    });
+    if (out.length === 0) out.push('その他');
+    return out;
+};
+
+const getShopGenres = (shop) => {
+    if (!shop) return [];
+    const seen = new Set();
+    const list = [];
+    const pushG = (g) => {
+        const s = normGenre(g);
+        if (s && !seen.has(s)) {
+            seen.add(s);
+            list.push(s);
+        }
+    };
+    if (Array.isArray(shop.genres)) shop.genres.forEach(pushG);
+    if (shop.genre) pushG(shop.genre);
+    return list;
+};
+
+const getShopLinks = (shop) => {
+    if (!shop) return [];
+    const raw = [];
+    if (Array.isArray(shop.links)) {
+        shop.links.forEach((lk) => {
+            if (lk && (lk.label || lk.url)) {
+                raw.push({ label: String(lk.label || '').trim(), url: String(lk.url || '').trim() });
+            }
+        });
+    }
+    if (raw.length === 0) {
+        [shop.link1, shop.link2, shop.link3, shop.link4].forEach((lk) => {
+            if (lk && (lk.label || lk.url)) {
+                raw.push({ label: String(lk.label || '').trim(), url: String(lk.url || '').trim() });
+            }
+        });
+    }
+    return raw.slice(0, 4);
+};
+
+const safeUrl = (u) => {
+    if (!u) return '';
+    const s = String(u).trim();
+    return /^https?:\/\//i.test(s) ? s : '';
+};
+
+// =========================================================
+// 1. ジャンル・系統の複数選択＆二重タグ除去
+// =========================================================
+const syncGenreSelectOptions = (selectedArr) => {
+    const sel = document.getElementById('sGenreSelect');
+    if (!sel) return;
+    const masterGenres = getMasterGenres();
+    const seen = new Set(masterGenres);
+    const merged = [...masterGenres];
+    (selectedArr || []).forEach((g) => {
+        const s = normGenre(g);
+        if (s && !seen.has(s)) {
+            seen.add(s);
+            merged.push(s);
+        }
+    });
+    sel.innerHTML = merged.map((g) => `<option value="${esc(g)}">${esc(g)}</option>`).join('');
+};
+
+const cleanupDuplicateGenreContainers = (sel, keepBox) => {
+    if (!sel) return;
+    const fieldWrapper = sel.closest('div') || sel.parentElement;
+    if (!fieldWrapper) return;
+
+    const masterSet = new Set(getMasterGenres());
+    [...fieldWrapper.querySelectorAll('div')].forEach((div) => {
+        if (div === keepBox || div.contains(keepBox)) return;
+        const btns = [...div.querySelectorAll('button')];
+        if (btns.length >= 2) {
+            const hit = btns.some((b) => {
+                const txt = normGenre(b.textContent.replace(/^✓\s*/, ''));
+                return masterSet.has(txt);
+            });
+            if (hit) {
+                div.classList.add('hidden');
+            }
+        }
+    });
+
+    const all114Boxes = [...document.querySelectorAll('#sGenreChips114')];
+    all114Boxes.slice(1).forEach((el) => el.remove());
+};
+
+const paintGenreChips114 = (selectedArr) => {
+    const sel = document.getElementById('sGenreSelect');
+    if (!sel) return;
+
+    let box = document.getElementById('sGenreChips114');
+    if (!box) {
+        box = document.createElement('div');
+        box.id = 'sGenreChips114';
+        box.className = 'flex flex-wrap gap-1.5 mt-1.5';
+        sel.insertAdjacentElement('afterend', box);
+    }
+
+    sel.classList.add('hidden');
+    cleanupDuplicateGenreContainers(sel, box);
+
+    const seen = new Set();
+    const allGenres = [];
+    [...getMasterGenres(), ...(selectedArr || [])].forEach((g) => {
+        const s = normGenre(g);
+        if (s && !seen.has(s)) {
+            seen.add(s);
+            allGenres.push(s);
+        }
+    });
+
+    const activeSet = new Set((selectedArr || []).map(normGenre).filter(Boolean));
+    box.innerHTML = allGenres.map((g) => {
+        const on = activeSet.has(g);
+        return `
+            <button type="button" data-g114="${esc(g)}" aria-pressed="${on ? 'true' : 'false'}"
+                class="px-2.5 py-1 rounded-xl text-xs font-bold border transition ${
+                    on
+                        ? 'is-on bg-ramen-red text-white border-ramen-red'
+                        : 'bg-white text-stone-700 border-stone-300 hover:bg-ramen-cream'
+                }">
+                ${on ? '✓ ' : ''}${esc(g)}
+            </button>
+        `;
+    }).join('');
+};
+
+const applyGenreSelection114 = (genresArr, allowEmpty = false) => {
+    const sel = document.getElementById('sGenreSelect');
+    if (!sel) return;
+
+    const seen = new Set();
+    const list = [];
+    (genresArr || []).forEach((g) => {
+        const s = normGenre(g);
+        if (s && !seen.has(s)) {
+            seen.add(s);
+            list.push(s);
+        }
+    });
+
+    const finalList = (list.length === 0 && !allowEmpty)
+        ? [getMasterGenres()[0] || 'その他']
+        : list;
+
+    window.__db88PickedGenres114 = [...finalList];
+    syncGenreSelectOptions(finalList);
+    sel.value = finalList[0] || '';
+    paintGenreChips114(finalList);
+};
+
+window.__db88SetGenres114 = applyGenreSelection114;
+
+const readSelectedGenres114 = () => {
+    if (Array.isArray(window.__db88PickedGenres114) && window.__db88PickedGenres114.length > 0) {
+        return [...window.__db88PickedGenres114];
+    }
+    const box = document.getElementById('sGenreChips114');
+    if (box) {
+        const seen = new Set();
+        const picked = [];
+        box.querySelectorAll('[data-g114].is-on, [data-g114][aria-pressed="true"]').forEach((b) => {
+            const s = normGenre(b.dataset.g114);
+            if (s && !seen.has(s)) {
+                seen.add(s);
+                picked.push(s);
+            }
+        });
+        if (picked.length > 0) return picked;
+    }
+    const sel = document.getElementById('sGenreSelect');
+    if (sel && sel.value) return [normGenre(sel.value)];
+    return [getMasterGenres()[0] || 'その他'];
+};
+
+if (!window.__db88Patch114ChipBound) {
+    window.__db88Patch114ChipBound = true;
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('#sGenreChips114 [data-g114]');
+        if (!btn) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        const val = normGenre(btn.dataset.g114);
+        if (!val) return;
+
+        const cur = Array.isArray(window.__db88PickedGenres114)
+            ? [...window.__db88PickedGenres114]
+            : readSelectedGenres114();
+
+        const exists = cur.includes(val);
+        const next = exists ? cur.filter((x) => x !== val) : [...cur, val];
+
+        applyGenreSelection114(next, true);
+    });
+}
+
+// =========================================================
+// 2. 公式・SNSリンクを最大4つまで拡張
+// =========================================================
+const ensureFourLinkInputs114 = () => {
+    const l2Url = document.getElementById('sLink2Url');
+    if (!l2Url) return;
+    const grid = l2Url.closest('.grid');
+    if (!grid) return;
+
+    if (!document.getElementById('sLink3Url')) {
+        const box3 = document.createElement('div');
+        box3.dataset.p114LinkExtra = '3';
+        box3.className = 'space-y-1.5';
+        box3.innerHTML = `
+            <span class="block text-xs font-bold text-stone-700">公式 / SNSリンク 3</span>
+            <input id="sLink3Label" type="text" placeholder="名称（例: 公式サイト、X、Instagram）" class="w-full px-3 py-1.5 bg-white border border-stone-300 rounded-xl text-xs">
+            <input id="sLink3Url" type="url" placeholder="https://example.com" class="w-full px-3 py-1.5 bg-white border border-stone-300 rounded-xl text-xs">
+        `;
+        grid.appendChild(box3);
+    }
+
+    if (!document.getElementById('sLink4Url')) {
+        const box4 = document.createElement('div');
+        box4.dataset.p114LinkExtra = '4';
+        box4.className = 'space-y-1.5';
+        box4.innerHTML = `
+            <span class="block text-xs font-bold text-stone-700">公式 / SNSリンク 4</span>
+            <input id="sLink4Label" type="text" placeholder="名称（例: 予約ページ・その他SNS）" class="w-full px-3 py-1.5 bg-white border border-stone-300 rounded-xl text-xs">
+            <input id="sLink4Url" type="url" placeholder="https://example.com" class="w-full px-3 py-1.5 bg-white border border-stone-300 rounded-xl text-xs">
+        `;
+        grid.appendChild(box4);
+    }
+};
+
+const fillFourLinkInputs114 = (shop) => {
+    ensureFourLinkInputs114();
+    const links = getShopLinks(shop);
+    for (let i = 1; i <= 4; i++) {
+        const lblEl = document.getElementById(`sLink${i}Label`);
+        const urlEl = document.getElementById(`sLink${i}Url`);
+        const item = links[i - 1] || { label: '', url: '' };
+        if (lblEl) lblEl.value = item.label || '';
+        if (urlEl) urlEl.value = item.url || '';
+    }
+};
+
+const collectFourLinkInputs114 = () => {
+    const out = [];
+    for (let i = 1; i <= 4; i++) {
+        const label = (document.getElementById(`sLink${i}Label`)?.value || '').trim();
+        const url = (document.getElementById(`sLink${i}Url`)?.value || '').trim();
+        if (label || url) {
+            out.push({ label, url });
+        }
+    }
+    return out;
+};
+
+if (!window.__db88Patch114ModalOpenBound) {
+    window.__db88Patch114ModalOpenBound = true;
+    document.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('[data-edit-shop]');
+        if (editBtn) {
+            const shopId = editBtn.dataset.editShop;
+            setTimeout(() => {
+                const db = getDb();
+                const shop = db && (db.shops || []).find((s) => s.id === shopId);
+                applyGenreSelection114(getShopGenres(shop), false);
+                fillFourLinkInputs114(shop || null);
+                syncModalBackdropLock114();
+            }, 50);
+            return;
+        }
+        if (e.target.closest('#headerPrimaryBtn, #mobileFabBtn, #emptyAddShopBtn, #visitModalQuickAddShopBtn')) {
+            setTimeout(() => {
+                const editId = document.getElementById('shopEditId')?.value || '';
+                if (!editId) {
+                    applyGenreSelection114([getMasterGenres()[0] || 'その他'], false);
+                    fillFourLinkInputs114(null);
+                }
+                syncModalBackdropLock114();
+            }, 50);
+        }
+    });
+}
+
+// =========================================================
+// 3. モーダル表示中の背面スクロール抑止
+// =========================================================
+const MODAL_IDS_114 = [
+    'visitModal',
+    'shopModal',
+    'shopDetailModal',
+    'inviteRoleModal',
+    'createDbModal',
+    'dbPasswordModal',
+    'dbOwnerSettingsModal',
+    'confirmDialog'
+];
+
+const isAnyModalOpen114 = () => {
+    return MODAL_IDS_114.some((id) => {
+        const el = document.getElementById(id);
+        return Boolean(el && !el.classList.contains('hidden'));
+    });
+};
+
+const isEventInsideModal114 = (target) => {
+    if (!target || typeof target.closest !== 'function') return false;
+    return Boolean(
+        target.closest(
+            MODAL_IDS_114.map((id) => `#${id}`).join(',') +
+            ', [role="dialog"], .modal, .swal2-container'
+        )
+    );
+};
+
+const syncModalBackdropLock114 = () => {
+    const open = isAnyModalOpen114();
+    const mainEl = document.querySelector('main');
+    if (mainEl) {
+        mainEl.style.overflow = open ? 'hidden' : '';
+    }
+};
+
+if (!window.__db88Patch114BackdropGuardBound) {
+    window.__db88Patch114BackdropGuardBound = true;
+
+    window.addEventListener('wheel', (e) => {
+        if (!isAnyModalOpen114()) return;
+        if (!isEventInsideModal114(e.target)) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    window.addEventListener('touchmove', (e) => {
+        if (!isAnyModalOpen114()) return;
+        if (!isEventInsideModal114(e.target)) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    document.addEventListener('click', () => {
+        setTimeout(syncModalBackdropLock114, 30);
+    });
+}
+
+// =========================================================
+// 4. 店舗保存時のデータ反映＆本体保存サイクルとの同期
+// =========================================================
+const shopForm114 = document.getElementById('shopForm');
+if (shopForm114 && !shopForm114.dataset.p114Bound) {
+    shopForm114.dataset.p114Bound = '1';
+    shopForm114.addEventListener('submit', () => {
+        const pickedGenres = readSelectedGenres114();
+        const pickedLinks = collectFourLinkInputs114();
+        const editId = document.getElementById('shopEditId')?.value || '';
+        const shopName = (document.getElementById('sNameInput')?.value || '').trim();
+        const activeDbId = viewState.activeDbId;
+
+        setTimeout(async () => {
+            const db = (sys.databases || []).find((d) => d.id === activeDbId);
+            if (!db) return;
+            const target = editId
+                ? (db.shops || []).find((s) => s.id === editId)
+                : (db.shops || []).find((s) => s.name === shopName);
+            if (!target) return;
+
+            target.genres = pickedGenres;
+            target.genre = pickedGenres[0];
+            target.links = pickedLinks;
+            target.link1 = pickedLinks[0] || { label: '', url: '' };
+            target.link2 = pickedLinks[1] || { label: '', url: '' };
+            target.link3 = pickedLinks[2] || { label: '', url: '' };
+            target.link4 = pickedLinks[3] || { label: '', url: '' };
+
+            if (typeof saveSystem === 'function') {
+                await saveSystem();
+            }
+            refreshShopAndVisitCards114();
+            syncModalBackdropLock114();
+        }, 250);
+    });
+}
+
+// =========================================================
+// 5. 店舗カード・訪問カード・店舗詳細の表示反映
+// =========================================================
+const refreshShopAndVisitCards114 = () => {
+    const db = getDb();
+    if (!db || viewState.screen !== 'db') return;
+
+    const shopMap = new Map((db.shops || []).map((s) => [s.id, s]));
+    const shopGenreFilter = document.getElementById('shopGenreFilter')?.value || 'ALL';
+    const visitGenreFilter = document.getElementById('visitGenreFilter')?.value || 'ALL';
+
+    document.querySelectorAll('#shopsGrid > article').forEach((card) => {
+        const sid = card.querySelector('[data-open-shop-detail]')?.dataset.openShopDetail;
+        const shop = shopMap.get(sid);
+        if (!shop) return;
+
+        const gList = getShopGenres(shop);
+        card.classList.toggle('hidden', shopGenreFilter !== 'ALL' && !gList.includes(shopGenreFilter));
+
+        const badge = card.querySelector('span.bg-ramen-red.rounded-full');
+        if (badge && gList.length > 0) {
+            badge.textContent = gList.join(' / ');
+        }
+
+        const links = getShopLinks(shop)
+            .map((lk) => ({ href: safeUrl(lk.url), label: lk.label || 'リンク' }))
+            .filter((x) => x.href);
+
+        [...card.querySelectorAll('[data-p114-links]')].forEach((el) => el.remove());
+
+        if (links.length > 0) {
+            const wrap = document.createElement('div');
+            wrap.dataset.p114Links = '1';
+            wrap.className = 'flex flex-wrap gap-1.5';
+            wrap.innerHTML = links.map((lk) => `
+                <a href="${esc(lk.href)}" target="_blank" rel="noopener noreferrer"
+                    class="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-800">
+                    <i class="fa-solid fa-link text-ramen-red mr-1"></i>${esc(lk.label)}
+                </a>
+            `).join('');
+
+            const oldAnchors = [...card.querySelectorAll('a[href^="http"]')].filter((a) => !a.textContent.includes('地図'));
+            if (oldAnchors.length > 0) {
+                const oldParent = oldAnchors[0].parentElement;
+                if (oldParent && oldParent.children.length === oldAnchors.length) {
+                    oldParent.replaceWith(wrap);
+                } else {
+                    oldAnchors.forEach((a) => a.remove());
+                    const footerDiv = card.querySelector('div.pt-3.border-t');
+                    if (footerDiv) footerDiv.insertAdjacentElement('beforebegin', wrap);
+                }
+            } else {
+                const footerDiv = card.querySelector('div.pt-3.border-t');
+                if (footerDiv) footerDiv.insertAdjacentElement('beforebegin', wrap);
+            }
+        }
+    });
+
+    document.querySelectorAll('#visitsGrid > article').forEach((card) => {
+        const sid = card.querySelector('[data-open-shop-detail]')?.dataset.openShopDetail;
+        const shop = shopMap.get(sid);
+        if (!shop) return;
+
+        const gList = getShopGenres(shop);
+        card.classList.toggle('hidden', visitGenreFilter !== 'ALL' && !gList.includes(visitGenreFilter));
+
+        const badge = card.querySelector('span.bg-ramen-red.rounded-full');
+        if (badge && gList.length > 0) {
+            badge.textContent = gList.join(' / ');
+        }
+    });
+};
+
+if (!window.__db88Patch114DetailBound) {
+    window.__db88Patch114DetailBound = true;
+    document.addEventListener('click', (e) => {
+        const detBtn = e.target.closest('[data-open-shop-detail]');
+        if (!detBtn) return;
+        const sid = detBtn.dataset.openShopDetail;
+        setTimeout(() => {
+            const db = getDb();
+            const shop = db && (db.shops || []).find((s) => s.id === sid);
+            const body = document.getElementById('shopDetailBody');
+            if (!shop || !body || body.querySelector('[data-p114-detail-links]')) return;
+
+            const links = getShopLinks(shop)
+                .map((lk) => ({ href: safeUrl(lk.url), label: lk.label || 'リンク' }))
+                .filter((x) => x.href);
+            if (links.length <= 2) return;
+
+            const infoCard = body.querySelectorAll('div.bg-white.p-4.rounded-2xl')[0];
+            if (!infoCard) return;
+            const box = document.createElement('div');
+            box.dataset.p114DetailLinks = '1';
+            box.className = 'flex flex-wrap gap-2 pt-2 border-t border-stone-100';
+            box.innerHTML = links.map((lk) => `
+                <a href="${esc(lk.href)}" target="_blank" rel="noopener noreferrer"
+                    class="px-3 py-1 bg-ramen-cream hover:bg-amber-100 border border-stone-200 rounded-xl font-bold text-ramen-black">
+                    <i class="fa-solid fa-link text-ramen-red mr-1"></i>${esc(lk.label)}
+                </a>
+            `).join('');
+            infoCard.appendChild(box);
+        }, 40);
+    });
+}
+
+['shopGenreFilter', 'visitGenreFilter', 'navTabVisitsBtn', 'navTabShopsBtn', 'navTabHostBtn', 'navTabPatchBtn', 'backToLobbyBtn', 'headerLogoBtn'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el && !el.dataset.p114RefreshBound) {
+        el.dataset.p114RefreshBound = '1';
+        el.addEventListener('change', () => setTimeout(refreshShopAndVisitCards114, 60));
+        el.addEventListener('click', () => setTimeout(refreshShopAndVisitCards114, 60));
+    }
+});
+
+ensureFourLinkInputs114();
+refreshShopAndVisitCards114();
+syncModalBackdropLock114();
+
+                })(ctxObj);
+            } catch (err) {
+                console.error('同梱パッチ実行エラー (db88_patch_1.1.4.js):', err);
+            }
+            try {
+                (function(ctx) {
+const { sys, viewState, toast, saveSystem, esc } = ctx;
+
+// リリースノート＆初回適用通知（1セッション1回のみ）
+if (!window.__db88Patch115Notified) {
+    window.__db88Patch115Notified = true;
+    sys.releaseNotes = Array.isArray(sys.releaseNotes) ? sys.releaseNotes : [];
+    if (!sys.releaseNotes.some((n) => n.version === 'v1.1.5')) {
+        sys.releaseNotes.unshift({
+            version: 'v1.1.5',
+            date: new Date().toISOString().slice(0, 10),
+            title: 'モーダル背面スクロール固定・保存同期中の操作ロック・ジャンル複数保持・起動時同期ポップアップ',
+            items: [
+                '小ウィンドウ（モーダル）表示中に背面画面へスクロールが持っていかれないようPC・スマホ両対応で固定',
+                '編集時の「変更を保存」押下から同期完了・小ウィンドウ自動クローズまでの待機中、内容関連の操作をロック',
+                'サイト更新・再描画時に系統・ジャンルの選択が1つ解除される不具合を修正',
+                '起動時に同期が完了するまで「同期中→同期完了」の小ウィンドウを表示し、完了後に自動で閉じるよう対応'
+            ]
+        });
+    }
+    if (typeof toast === 'function') {
+        toast('Patch 1.1.5 を適用しました');
+    }
+}
+
+const getDb = () => (sys.databases || []).find((d) => d.id === viewState.activeDbId) || null;
+const normGenre = (v) => String(v || '').trim().replace(/\s+/g, ' ');
+
+// DB固有のジャンル定義・既存店舗のジャンル・マスタジャンルをすべて集約して取得
+const getMasterGenres = () => {
+    const seen = new Set();
+    const out = [];
+    const pushG = (g) => {
+        const s = normGenre(g);
+        if (s && !seen.has(s)) {
+            seen.add(s);
+            out.push(s);
+        }
+    };
+
+    const db = getDb();
+    if (db) {
+        if (Array.isArray(db.genres)) db.genres.forEach(pushG);
+        if (db.classifications && Array.isArray(db.classifications.genres)) {
+            db.classifications.genres.forEach(pushG);
+        }
+        if (Array.isArray(db.shops)) {
+            db.shops.forEach((sh) => {
+                if (Array.isArray(sh.genres)) sh.genres.forEach(pushG);
+                if (sh.genre) pushG(sh.genre);
+            });
+        }
+    }
+
+    if (sys.classifications && Array.isArray(sys.classifications.genres)) {
+        sys.classifications.genres.forEach(pushG);
+    }
+    if (Array.isArray(sys.genres)) {
+        sys.genres.forEach(pushG);
+    }
+
+    // sGenreSelect に既に option がある場合はそれも取り込む
+    const sel = document.getElementById('sGenreSelect');
+    if (sel && sel.options && sel.options.length > 0) {
+        [...sel.options].forEach((opt) => pushG(opt.value || opt.textContent));
+    }
+
+    if (out.length === 0) {
+        ['家系', 'ラーメンショップ', '佐野ラーメン', 'その他'].forEach(pushG);
+    }
+    return out;
+};
+
+const getShopGenres = (shop) => {
+    if (!shop) return [];
+    const seen = new Set();
+    const list = [];
+    const pushG = (g) => {
+        const s = normGenre(g);
+        if (s && !seen.has(s)) {
+            seen.add(s);
+            list.push(s);
+        }
+    };
+    if (Array.isArray(shop.genres)) shop.genres.forEach(pushG);
+    if (shop.genre) pushG(shop.genre);
+    return list;
+};
+
+const getShopLinks = (shop) => {
+    if (!shop) return [];
+    const raw = [];
+    if (Array.isArray(shop.links)) {
+        shop.links.forEach((lk) => {
+            if (lk && (lk.label || lk.url)) {
+                raw.push({ label: String(lk.label || '').trim(), url: String(lk.url || '').trim() });
+            }
+        });
+    }
+    if (raw.length === 0) {
+        [shop.link1, shop.link2, shop.link3, shop.link4].forEach((lk) => {
+            if (lk && (lk.label || lk.url)) {
+                raw.push({ label: String(lk.label || '').trim(), url: String(lk.url || '').trim() });
+            }
+        });
+    }
+    return raw.slice(0, 4);
+};
+
+const safeUrl = (u) => {
+    if (!u) return '';
+    const s = String(u).trim();
+    return /^https?:\/\//i.test(s) ? s : '';
+};
+
+// =========================================================
+// 1. 小ウィンドウ（モーダル）表示中の背面スクロール固定（PC・スマホ両対応）
+// =========================================================
+const MODAL_IDS_115 = [
+    'visitModal',
+    'shopModal',
+    'shopDetailModal',
+    'inviteRoleModal',
+    'createDbModal',
+    'dbPasswordModal',
+    'dbOwnerSettingsModal',
+    'confirmDialog'
+];
+
+const getOpenModalEl115 = () => {
+    for (const id of MODAL_IDS_115) {
+        const el = document.getElementById(id);
+        if (el && !el.classList.contains('hidden')) return el;
+    }
+    return null;
+};
+
+const isInsideModal115 = (target) => {
+    if (!target || typeof target.closest !== 'function') return false;
+    return Boolean(target.closest(MODAL_IDS_115.map((id) => `#${id}`).join(',')));
+};
+
+const findScrollableAncestor115 = (startEl, boundaryEl) => {
+    let cur = startEl;
+    while (cur && cur !== boundaryEl && cur !== document.body && cur !== document.documentElement) {
+        const style = window.getComputedStyle(cur);
+        const oy = style.overflowY;
+        if ((oy === 'auto' || oy === 'scroll' || oy === 'overlay') && cur.scrollHeight > cur.clientHeight + 1) {
+            return cur;
+        }
+        cur = cur.parentElement;
+    }
+    if (boundaryEl && boundaryEl.scrollHeight > boundaryEl.clientHeight + 1) {
+        return boundaryEl;
+    }
+    return null;
+};
+
+if (!window.__db88Patch115ScrollLockBound) {
+    window.__db88Patch115ScrollLockBound = true;
+    window.__db88TouchLastY115 = null;
+
+    window.addEventListener('wheel', (e) => {
+        const modal = getOpenModalEl115();
+        if (!modal) return;
+
+        if (!isInsideModal115(e.target)) {
+            e.preventDefault();
+            return;
+        }
+
+        const scroller = findScrollableAncestor115(e.target, modal);
+        if (!scroller) {
+            e.preventDefault();
+            return;
+        }
+
+        const atTop = scroller.scrollTop <= 0 && e.deltaY < 0;
+        const atBottom = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1 && e.deltaY > 0;
+        if (atTop || atBottom) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    window.addEventListener('touchstart', (e) => {
+        if (!getOpenModalEl115()) return;
+        if (e.touches && e.touches.length > 0) {
+            window.__db88TouchLastY115 = e.touches[0].clientY;
+        }
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+        const modal = getOpenModalEl115();
+        if (!modal) return;
+
+        if (!isInsideModal115(e.target)) {
+            e.preventDefault();
+            return;
+        }
+
+        const scroller = findScrollableAncestor115(e.target, modal);
+        if (!scroller) {
+            e.preventDefault();
+            return;
+        }
+
+        if (e.touches && e.touches.length > 0 && typeof window.__db88TouchLastY115 === 'number') {
+            const curY = e.touches[0].clientY;
+            const dy = window.__db88TouchLastY115 - curY;
+            window.__db88TouchLastY115 = curY;
+
+            const atTop = scroller.scrollTop <= 0 && dy < 0;
+            const atBottom = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1 && dy > 0;
+            if (atTop || atBottom) {
+                e.preventDefault();
+            }
+        }
+    }, { passive: false });
+}
+
+// =========================================================
+// 2. 系統・ジャンルの複数選択保持（サイト更新・再描画でも1つ外れない対応）
+// =========================================================
+const DRAFT_STORAGE_KEY_115 = 'db88_patch115_genre_drafts_v1';
+
+const loadGenreDraftMap115 = () => {
+    if (window.__db88ShopGenreDrafts115 && typeof window.__db88ShopGenreDrafts115 === 'object') {
+        return window.__db88ShopGenreDrafts115;
+    }
+    let map = {};
+    try {
+        const raw = localStorage.getItem(DRAFT_STORAGE_KEY_115);
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed === 'object') map = parsed;
+        }
+    } catch (_) {}
+    window.__db88ShopGenreDrafts115 = map;
+    return map;
+};
+
+const saveGenreDraft115 = (key, arr) => {
+    const map = loadGenreDraftMap115();
+    const clean = [];
+    const seen = new Set();
+    (arr || []).forEach((g) => {
+        const s = normGenre(g);
+        if (s && !seen.has(s)) {
+            seen.add(s);
+            clean.push(s);
+        }
+    });
+    map[key || '__new__'] = clean;
+    try {
+        localStorage.setItem(DRAFT_STORAGE_KEY_115, JSON.stringify(map));
+    } catch (_) {}
+    return clean;
+};
+
+const getCurrentDraftKey115 = () => {
+    const editId = document.getElementById('shopEditId')?.value || '';
+    const dbId = viewState.activeDbId || 'default';
+    return editId ? `${dbId}:${editId}` : `${dbId}:__new__`;
+};
+
+const findGenreAnchorElement115 = () => {
+    const sel = document.getElementById('sGenreSelect');
+    if (sel) return { el: sel, isSelect: true };
+
+    // sGenreSelect が別IDまたは存在しない場合でも、ジャンル/系統ラベル周辺からアンカーを探す
+    const shopModal = document.getElementById('shopModal');
+    if (!shopModal) return null;
+
+    const labels = [...shopModal.querySelectorAll('label, span, div')];
+    const hitLabel = labels.find((node) => {
+        if (node.children.length > 2) return false;
+        const t = (node.textContent || '').trim();
+        return /^(系統|ジャンル|系統・ジャンル|ジャンル・系統)(\s*[\(（].*[\)）])?$/.test(t);
+    });
+    if (hitLabel) {
+        const container = hitLabel.closest('div') || hitLabel.parentElement;
+        if (container) return { el: container, isSelect: false };
+    }
+    return null;
+};
+
+const syncGenreSelectOptions115 = (selectedArr) => {
+    const sel = document.getElementById('sGenreSelect');
+    if (!sel) return;
+    const masterGenres = getMasterGenres();
+    const seen = new Set(masterGenres);
+    const merged = [...masterGenres];
+    (selectedArr || []).forEach((g) => {
+        const s = normGenre(g);
+        if (s && !seen.has(s)) {
+            seen.add(s);
+            merged.push(s);
+        }
+    });
+    sel.innerHTML = merged.map((g) => `<option value="${esc(g)}">${esc(g)}</option>`).join('');
+};
+
+const cleanupDuplicateGenreContainers115 = (anchorInfo, keepBox) => {
+    if (!anchorInfo || !anchorInfo.el) return;
+    const fieldWrapper = anchorInfo.isSelect
+        ? (anchorInfo.el.closest('div') || anchorInfo.el.parentElement)
+        : anchorInfo.el;
+    if (!fieldWrapper) return;
+
+    const masterSet = new Set(getMasterGenres());
+    [...fieldWrapper.querySelectorAll('div')].forEach((div) => {
+        if (div === keepBox || div.contains(keepBox)) return;
+        const btns = [...div.querySelectorAll('button')];
+        if (btns.length >= 2) {
+            const hit = btns.some((b) => {
+                const txt = normGenre(b.textContent.replace(/^✓\s*/, ''));
+                return masterSet.has(txt);
+            });
+            if (hit) {
+                div.classList.add('hidden');
+            }
+        }
+    });
+
+    const all115Boxes = [...document.querySelectorAll('#sGenreChips115')];
+    all115Boxes.slice(1).forEach((el) => el.remove());
+};
+
+const paintGenreChips115 = (selectedArr) => {
+    const anchor = findGenreAnchorElement115();
+    if (!anchor || !anchor.el) return;
+
+    let box = document.getElementById('sGenreChips115');
+    if (!box) {
+        box = document.createElement('div');
+        box.id = 'sGenreChips115';
+        box.className = 'flex flex-wrap gap-1.5 mt-1.5';
+        if (anchor.isSelect) {
+            anchor.el.insertAdjacentElement('afterend', box);
+        } else {
+            anchor.el.appendChild(box);
+        }
+    }
+
+    if (anchor.isSelect) {
+        anchor.el.classList.add('hidden');
+    }
+    cleanupDuplicateGenreContainers115(anchor, box);
+
+    const seen = new Set();
+    const allGenres = [];
+    [...getMasterGenres(), ...(selectedArr || [])].forEach((g) => {
+        const s = normGenre(g);
+        if (s && !seen.has(s)) {
+            seen.add(s);
+            allGenres.push(s);
+        }
+    });
+
+    const activeSet = new Set((selectedArr || []).map(normGenre).filter(Boolean));
+    box.innerHTML = allGenres.map((g) => {
+        const on = activeSet.has(g);
+        return `
+            <button type="button" data-g115="${esc(g)}" aria-pressed="${on ? 'true' : 'false'}"
+                class="px-2.5 py-1 rounded-xl text-xs font-bold border transition ${
+                    on
+                        ? 'is-on bg-ramen-red text-white border-ramen-red'
+                        : 'bg-white text-stone-700 border-stone-300 hover:bg-ramen-cream'
+                }">
+                ${on ? '✓ ' : ''}${esc(g)}
+            </button>
+        `;
+    }).join('');
+};
+
+const applyGenreSelection115 = (genresArr, allowEmpty = false, persistDraft = true) => {
+    const seen = new Set();
+    const list = [];
+    (genresArr || []).forEach((g) => {
+        const s = normGenre(g);
+        if (s && !seen.has(s)) {
+            seen.add(s);
+            list.push(s);
+        }
+    });
+
+    const finalList = (list.length === 0 && !allowEmpty)
+        ? [getMasterGenres()[0] || 'その他']
+        : list;
+
+    window.__db88PickedGenres115 = [...finalList];
+    if (persistDraft) {
+        saveGenreDraft115(getCurrentDraftKey115(), finalList);
+    }
+
+    const sel = document.getElementById('sGenreSelect');
+    if (sel) {
+        syncGenreSelectOptions115(finalList);
+        sel.value = finalList[0] || '';
+    }
+    paintGenreChips115(finalList);
+};
+
+const readSelectedGenres115 = () => {
+    const key = getCurrentDraftKey115();
+    const drafts = loadGenreDraftMap115();
+    if (Array.isArray(drafts[key]) && drafts[key].length > 0) {
+        return [...drafts[key]];
+    }
+    if (Array.isArray(window.__db88PickedGenres115) && window.__db88PickedGenres115.length > 0) {
+        return [...window.__db88PickedGenres115];
+    }
+    const sel = document.getElementById('sGenreSelect');
+    if (sel && sel.value) return [normGenre(sel.value)];
+    return [getMasterGenres()[0] || 'その他'];
+};
+
+if (!window.__db88Patch115ChipBound) {
+    window.__db88Patch115ChipBound = true;
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('#sGenreChips115 [data-g115]');
+        if (!btn) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        const val = normGenre(btn.dataset.g115);
+        if (!val) return;
+
+        const cur = readSelectedGenres115();
+        const next = cur.includes(val) ? cur.filter((x) => x !== val) : [...cur, val];
+        applyGenreSelection115(next, true, true);
+    });
+}
+
+const restoreGenresAcrossDb115 = () => {
+    const db = getDb();
+    if (!db || !Array.isArray(db.shops)) return false;
+    const drafts = loadGenreDraftMap115();
+    let changed = false;
+
+    db.shops.forEach((shop) => {
+        const key = `${db.id}:${shop.id}`;
+        const existing = getShopGenres(shop);
+        const draftArr = Array.isArray(drafts[key]) ? drafts[key] : [];
+
+        if (draftArr.length > existing.length) {
+            shop.genres = [...draftArr];
+            shop.genre = draftArr[0];
+            changed = true;
+        } else if (existing.length > 0) {
+            const normExisting = existing.map(normGenre);
+            if (!Array.isArray(shop.genres) || shop.genres.length !== normExisting.length) {
+                shop.genres = normExisting;
+                shop.genre = normExisting[0];
+                changed = true;
+            }
+            if (draftArr.join('|') !== normExisting.join('|')) {
+                saveGenreDraft115(key, normExisting);
+            }
+        }
+    });
+
+    return changed;
+};
+
+// =========================================================
+// 3. 公式・SNSリンクを最大4つまで拡張
+// =========================================================
+const ensureFourLinkInputs115 = () => {
+    const l2Url = document.getElementById('sLink2Url');
+    if (!l2Url) return;
+    const grid = l2Url.closest('.grid');
+    if (!grid) return;
+
+    if (!document.getElementById('sLink3Url')) {
+        const box3 = document.createElement('div');
+        box3.dataset.p115LinkExtra = '3';
+        box3.className = 'space-y-1.5';
+        box3.innerHTML = `
+            <span class="block text-xs font-bold text-stone-700">公式 / SNSリンク 3</span>
+            <input id="sLink3Label" type="text" placeholder="名称（例: 公式サイト、X、Instagram）" class="w-full px-3 py-1.5 bg-white border border-stone-300 rounded-xl text-xs">
+            <input id="sLink3Url" type="url" placeholder="https://example.com" class="w-full px-3 py-1.5 bg-white border border-stone-300 rounded-xl text-xs">
+        `;
+        grid.appendChild(box3);
+    }
+
+    if (!document.getElementById('sLink4Url')) {
+        const box4 = document.createElement('div');
+        box4.dataset.p115LinkExtra = '4';
+        box4.className = 'space-y-1.5';
+        box4.innerHTML = `
+            <span class="block text-xs font-bold text-stone-700">公式 / SNSリンク 4</span>
+            <input id="sLink4Label" type="text" placeholder="名称（例: 予約ページ・その他SNS）" class="w-full px-3 py-1.5 bg-white border border-stone-300 rounded-xl text-xs">
+            <input id="sLink4Url" type="url" placeholder="https://example.com" class="w-full px-3 py-1.5 bg-white border border-stone-300 rounded-xl text-xs">
+        `;
+        grid.appendChild(box4);
+    }
+};
+
+const fillFourLinkInputs115 = (shop) => {
+    ensureFourLinkInputs115();
+    const links = getShopLinks(shop);
+    for (let i = 1; i <= 4; i++) {
+        const lblEl = document.getElementById(`sLink${i}Label`);
+        const urlEl = document.getElementById(`sLink${i}Url`);
+        const item = links[i - 1] || { label: '', url: '' };
+        if (lblEl) lblEl.value = item.label || '';
+        if (urlEl) urlEl.value = item.url || '';
+    }
+};
+
+const collectFourLinkInputs115 = () => {
+    const out = [];
+    for (let i = 1; i <= 4; i++) {
+        const label = (document.getElementById(`sLink${i}Label`)?.value || '').trim();
+        const url = (document.getElementById(`sLink${i}Url`)?.value || '').trim();
+        if (label || url) {
+            out.push({ label, url });
+        }
+    }
+    return out;
+};
+
+// =========================================================
+// 4. 編集時の「変更を保存」〜同期完了・小ウィンドウ自動クローズまでの操作ロック
+// =========================================================
+const ensureSavingLockOverlay115 = () => {
+    let ov = document.getElementById('saveSyncLockOverlay115');
+    if (!ov) {
+        ov = document.createElement('div');
+        ov.id = 'saveSyncLockOverlay115';
+        ov.className = 'hidden fixed inset-0 z-[9999] bg-black/50 backdrop-blur-[1px] flex items-center justify-center p-4 select-none';
+        ov.innerHTML = `
+            <div class="bg-white border-2 border-stone-800 rounded-2xl shadow-2xl px-6 py-5 max-w-xs w-full text-center space-y-2">
+                <div class="text-sm font-black text-ramen-black flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-rotate fa-spin text-ramen-red"></i>
+                    <span>変更を同期中...</span>
+                </div>
+                <p class="text-xs text-stone-600">同期が完了するまで操作できません</p>
+            </div>
+        `;
+        document.body.appendChild(ov);
+    }
+    return ov;
+};
+
+const setSavingLockActive115 = (active) => {
+    const ov = ensureSavingLockOverlay115();
+    window.__db88SavingLocked115 = Boolean(active);
+    ov.classList.toggle('hidden', !active);
+
+    const shopModal = document.getElementById('shopModal');
+    if (shopModal) {
+        shopModal.querySelectorAll('input, select, textarea, button').forEach((el) => {
+            if (active) {
+                if (!el.dataset.p115PrevDisabled) {
+                    el.dataset.p115PrevDisabled = el.disabled ? '1' : '0';
+                }
+                el.disabled = true;
+            } else if (el.dataset.p115PrevDisabled !== undefined) {
+                el.disabled = el.dataset.p115PrevDisabled === '1';
+                delete el.dataset.p115PrevDisabled;
+            }
+        });
+    }
+};
+
+if (!window.__db88Patch115SavingGuardBound) {
+    window.__db88Patch115SavingGuardBound = true;
+    ['click', 'keydown', 'mousedown', 'pointerdown', 'submit'].forEach((evName) => {
+        document.addEventListener(evName, (e) => {
+            if (!window.__db88SavingLocked115) return;
+            const ov = document.getElementById('saveSyncLockOverlay115');
+            if (ov && (e.target === ov || ov.contains(e.target))) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                return;
+            }
+            const shopModal = document.getElementById('shopModal');
+            if (shopModal && !shopModal.classList.contains('hidden') && shopModal.contains(e.target)) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+            }
+        }, true);
+    });
+}
+
+// =========================================================
+// 5. 起動時の同期完了まで「同期中→同期完了」小ウィンドウを表示し、完了後に自動で閉じる
+// =========================================================
+const ensureBootSyncPopup115 = () => {
+    let pop = document.getElementById('bootSyncPopup115');
+    if (!pop) {
+        pop = document.createElement('div');
+        pop.id = 'bootSyncPopup115';
+        pop.className = 'fixed inset-0 z-[9998] bg-black/35 flex items-center justify-center p-4';
+        pop.innerHTML = `
+            <div id="bootSyncPopupCard115" class="bg-white border-2 border-stone-800 rounded-2xl shadow-2xl px-6 py-5 max-w-xs w-full text-center space-y-2 transition">
+                <div id="bootSyncStatusRow115" class="text-sm font-black text-ramen-black flex items-center justify-center gap-2">
+                    <i id="bootSyncIcon115" class="fa-solid fa-rotate fa-spin text-ramen-red"></i>
+                    <span id="bootSyncText115">同期中...</span>
+                </div>
+                <p id="bootSyncSub115" class="text-xs text-stone-600">データを最新の状態に同期しています</p>
+            </div>
+        `;
+        document.body.appendChild(pop);
+    }
+    return pop;
+};
+
+const runBootSyncPopupFlow115 = async () => {
+    if (window.__db88BootSyncDone115) return;
+    window.__db88BootSyncDone115 = true;
+
+    const pop = ensureBootSyncPopup115();
+    pop.classList.remove('hidden');
+
+    const iconEl = document.getElementById('bootSyncIcon115');
+    const textEl = document.getElementById('bootSyncText115');
+    const subEl = document.getElementById('bootSyncSub115');
+
+    if (iconEl) iconEl.className = 'fa-solid fa-rotate fa-spin text-ramen-red';
+    if (textEl) textEl.textContent = '同期中...';
+    if (subEl) subEl.textContent = 'データを最新の状態に同期しています';
+
+    try {
+        restoreGenresAcrossDb115();
+        if (typeof saveSystem === 'function') {
+            await Promise.race([
+                Promise.resolve().then(() => saveSystem()),
+                new Promise((resolve) => setTimeout(resolve, 2500))
+            ]);
+        } else {
+            await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+        refreshShopAndVisitCards115();
+    } catch (_) {}
+
+    if (iconEl) iconEl.className = 'fa-solid fa-circle-check text-emerald-600';
+    if (textEl) textEl.textContent = '同期完了';
+    if (subEl) subEl.textContent = '最新の状態になりました';
+
+    setTimeout(() => {
+        pop.classList.add('hidden');
+    }, 650);
+};
+
+// =========================================================
+// 6. モーダル開閉・フォーム送信・カード表示反映
+// =========================================================
+const hydrateShopModalFields115 = (shopId = '') => {
+    const db = getDb();
+    const shop = shopId && db ? (db.shops || []).find((s) => s.id === shopId) : null;
+    if (shop) {
+        const key = `${db.id}:${shop.id}`;
+        const drafts = loadGenreDraftMap115();
+        const shopGenres = getShopGenres(shop);
+        const initialGenres = (Array.isArray(drafts[key]) && drafts[key].length > shopGenres.length)
+            ? drafts[key]
+            : shopGenres;
+
+        applyGenreSelection115(initialGenres, false, true);
+        fillFourLinkInputs115(shop);
+    } else {
+        applyGenreSelection115([getMasterGenres()[0] || 'その他'], false, true);
+        fillFourLinkInputs115(null);
+    }
+};
+
+if (!window.__db88Patch115ModalOpenBound) {
+    window.__db88Patch115ModalOpenBound = true;
+    document.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('[data-edit-shop]');
+        if (editBtn) {
+            const shopId = editBtn.dataset.editShop;
+            [40, 120, 250].forEach((ms) => {
+                setTimeout(() => hydrateShopModalFields115(shopId), ms);
+            });
+            return;
+        }
+
+        if (e.target.closest('#headerPrimaryBtn, #mobileFabBtn, #emptyAddShopBtn, #visitModalQuickAddShopBtn')) {
+            [40, 120, 250].forEach((ms) => {
+                setTimeout(() => {
+                    const editId = document.getElementById('shopEditId')?.value || '';
+                    hydrateShopModalFields115(editId);
+                }, ms);
+            });
+        }
+    });
+}
+
+const shopForm115 = document.getElementById('shopForm');
+if (shopForm115 && !shopForm115.dataset.p115Bound) {
+    shopForm115.dataset.p115Bound = '1';
+    shopForm115.addEventListener('submit', () => {
+        const pickedGenres = readSelectedGenres115();
+        const pickedLinks = collectFourLinkInputs115();
+        const editId = document.getElementById('shopEditId')?.value || '';
+        const shopName = (document.getElementById('sNameInput')?.value || '').trim();
+        const activeDbId = viewState.activeDbId;
+
+        setSavingLockActive115(true);
+
+        setTimeout(async () => {
+            try {
+                const db = (sys.databases || []).find((d) => d.id === activeDbId);
+                if (db) {
+                    const target = editId
+                        ? (db.shops || []).find((s) => s.id === editId)
+                        : (db.shops || []).find((s) => s.name === shopName);
+                    if (target) {
+                        target.genres = [...pickedGenres];
+                        target.genre = pickedGenres[0] || getMasterGenres()[0] || 'その他';
+                        target.links = pickedLinks;
+                        target.link1 = pickedLinks[0] || { label: '', url: '' };
+                        target.link2 = pickedLinks[1] || { label: '', url: '' };
+                        target.link3 = pickedLinks[2] || { label: '', url: '' };
+                        target.link4 = pickedLinks[3] || { label: '', url: '' };
+                        saveGenreDraft115(`${db.id}:${target.id}`, pickedGenres);
+                    }
+                }
+                if (typeof saveSystem === 'function') {
+                    await saveSystem();
+                }
+                refreshShopAndVisitCards115();
+            } finally {
+                const shopModal = document.getElementById('shopModal');
+                if (shopModal && !shopModal.classList.contains('hidden')) {
+                    const closeBtn = shopModal.querySelector('[data-close-modal], #closeShopModalBtn, button[type="button"]');
+                    if (closeBtn && closeBtn.textContent && (closeBtn.textContent.includes('閉じる') || closeBtn.textContent.includes('キャンセル') || closeBtn.textContent.includes('×'))) {
+                        closeBtn.click();
+                    }
+                }
+                setSavingLockActive115(false);
+            }
+        }, 300);
+    });
+}
+
+const refreshShopAndVisitCards115 = () => {
+    restoreGenresAcrossDb115();
+    const db = getDb();
+    if (!db || viewState.screen !== 'db') return;
+
+    const shopMap = new Map((db.shops || []).map((s) => [s.id, s]));
+    const shopGenreFilter = document.getElementById('shopGenreFilter')?.value || 'ALL';
+    const visitGenreFilter = document.getElementById('visitGenreFilter')?.value || 'ALL';
+
+    document.querySelectorAll('#shopsGrid > article').forEach((card) => {
+        const sid = card.querySelector('[data-open-shop-detail]')?.dataset.openShopDetail;
+        const shop = shopMap.get(sid);
+        if (!shop) return;
+
+        const gList = getShopGenres(shop);
+        card.classList.toggle('hidden', shopGenreFilter !== 'ALL' && !gList.includes(shopGenreFilter));
+
+        const badge = card.querySelector('span.bg-ramen-red.rounded-full');
+        if (badge && gList.length > 0) {
+            badge.textContent = gList.join(' / ');
+        }
+
+        const links = getShopLinks(shop)
+            .map((lk) => ({ href: safeUrl(lk.url), label: lk.label || 'リンク' }))
+            .filter((x) => x.href);
+
+        [...card.querySelectorAll('[data-p115-links]')].forEach((el) => el.remove());
+
+        if (links.length > 0) {
+            const wrap = document.createElement('div');
+            wrap.dataset.p115Links = '1';
+            wrap.className = 'flex flex-wrap gap-1.5';
+            wrap.innerHTML = links.map((lk) => `
+                <a href="${esc(lk.href)}" target="_blank" rel="noopener noreferrer"
+                    class="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-800">
+                    <i class="fa-solid fa-link text-ramen-red mr-1"></i>${esc(lk.label)}
+                </a>
+            `).join('');
+
+            const oldAnchors = [...card.querySelectorAll('a[href^="http"]')].filter((a) => !a.textContent.includes('地図'));
+            if (oldAnchors.length > 0) {
+                const oldParent = oldAnchors[0].parentElement;
+                if (oldParent && oldParent.children.length === oldAnchors.length) {
+                    oldParent.replaceWith(wrap);
+                } else {
+                    oldAnchors.forEach((a) => a.remove());
+                    const footerDiv = card.querySelector('div.pt-3.border-t');
+                    if (footerDiv) footerDiv.insertAdjacentElement('beforebegin', wrap);
+                }
+            } else {
+                const footerDiv = card.querySelector('div.pt-3.border-t');
+                if (footerDiv) footerDiv.insertAdjacentElement('beforebegin', wrap);
+            }
+        }
+    });
+
+    document.querySelectorAll('#visitsGrid > article').forEach((card) => {
+        const sid = card.querySelector('[data-open-shop-detail]')?.dataset.openShopDetail;
+        const shop = shopMap.get(sid);
+        if (!shop) return;
+
+        const gList = getShopGenres(shop);
+        card.classList.toggle('hidden', visitGenreFilter !== 'ALL' && !gList.includes(visitGenreFilter));
+
+        const badge = card.querySelector('span.bg-ramen-red.rounded-full');
+        if (badge && gList.length > 0) {
+            badge.textContent = gList.join(' / ');
+        }
+    });
+};
+
+if (!window.__db88Patch115DetailBound) {
+    window.__db88Patch115DetailBound = true;
+    document.addEventListener('click', (e) => {
+        const detBtn = e.target.closest('[data-open-shop-detail]');
+        if (!detBtn) return;
+        const sid = detBtn.dataset.openShopDetail;
+        setTimeout(() => {
+            const db = getDb();
+            const shop = db && (db.shops || []).find((s) => s.id === sid);
+            const body = document.getElementById('shopDetailBody');
+            if (!shop || !body || body.querySelector('[data-p115-detail-links]')) return;
+
+            const links = getShopLinks(shop)
+                .map((lk) => ({ href: safeUrl(lk.url), label: lk.label || 'リンク' }))
+                .filter((x) => x.href);
+            if (links.length <= 2) return;
+
+            const infoCard = body.querySelectorAll('div.bg-white.p-4.rounded-2xl')[0];
+            if (!infoCard) return;
+            const box = document.createElement('div');
+            box.dataset.p115DetailLinks = '1';
+            box.className = 'flex flex-wrap gap-2 pt-2 border-t border-stone-100';
+            box.innerHTML = links.map((lk) => `
+                <a href="${esc(lk.href)}" target="_blank" rel="noopener noreferrer"
+                    class="px-3 py-1 bg-ramen-cream hover:bg-amber-100 border border-stone-200 rounded-xl font-bold text-ramen-black">
+                    <i class="fa-solid fa-link text-ramen-red mr-1"></i>${esc(lk.label)}
+                </a>
+            `).join('');
+            infoCard.appendChild(box);
+        }, 40);
+    });
+}
+
+['shopGenreFilter', 'visitGenreFilter', 'navTabVisitsBtn', 'navTabShopsBtn', 'navTabHostBtn', 'navTabPatchBtn', 'backToLobbyBtn', 'headerLogoBtn'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el && !el.dataset.p115RefreshBound) {
+        el.dataset.p115RefreshBound = '1';
+        el.addEventListener('change', () => setTimeout(refreshShopAndVisitCards115, 60));
+        el.addEventListener('click', () => setTimeout(refreshShopAndVisitCards115, 60));
+    }
+});
+
+ensureFourLinkInputs115();
+refreshShopAndVisitCards115();
+runBootSyncPopupFlow115();
+
+                })(ctxObj);
+            } catch (err) {
+                console.error('同梱パッチ実行エラー (db88_patch_1.1.5.js):', err);
+            }
+            try {
+                (function(ctx) {
+const { sys, viewState, toast, esc } = ctx;
+
+if (!window.__db88Patch116AddedNotified) {
+    window.__db88Patch116AddedNotified = true;
+    sys.releaseNotes = Array.isArray(sys.releaseNotes) ? sys.releaseNotes : [];
+    if (!sys.releaseNotes.some((n) => n.version === 'v1.1.6')) {
+        sys.releaseNotes.unshift({
+            version: 'v1.1.6',
+            date: new Date().toISOString().slice(0, 10),
+            title: '系統・ジャンル選択タグの追加',
+            items: [
+                '店舗登録・編集モーダルの系統・ジャンル欄に専用タグを表示し、2回目以降の開閉でも同じように表示されるよう改善'
+            ]
+        });
+    }
+    if (typeof toast === 'function') {
+        toast('Patch 1.1.6 を適用しました');
+    }
+}
+
+const getDb116 = () => (sys.databases || []).find((d) => d.id === viewState.activeDbId) || null;
+const trimG116 = (v) => String(v || '').trim();
+
+const findGenreSelect116 = (modal) => {
+    if (!modal) return null;
+    const selects = [...modal.querySelectorAll('select')];
+    if (selects.length === 0) return null;
+
+    const byAttr = selects.find((s) => /genre/i.test(s.id || '') || /genre/i.test(s.name || ''));
+    if (byAttr) return byAttr;
+
+    const byContext = selects.find((s) => {
+        const block = s.closest('div, label, fieldset') || s.parentElement;
+        const txt = (block ? block.textContent : '') || '';
+        const hasGenreWord = txt.includes('ジャンル') || txt.includes('系統');
+        const hasParkingWord = txt.includes('駐車場') || txt.includes('駐輪場') || txt.includes('設備');
+        return hasGenreWord && !hasParkingWord;
+    });
+    if (byContext) return byContext;
+
+    return null;
+};
+
+const getGenreList116 = () => {
+    const seen = new Set();
+    const out = [];
+    const add = (g) => {
+        const s = trimG116(g);
+        if (s && !seen.has(s)) {
+            seen.add(s);
+            out.push(s);
+        }
+    };
+
+    const db = getDb116();
+    if (db) {
+        if (Array.isArray(db.genres)) db.genres.forEach(add);
+        if (db.classifications && Array.isArray(db.classifications.genres)) {
+            db.classifications.genres.forEach(add);
+        }
+        if (Array.isArray(db.shops)) {
+            db.shops.forEach((sh) => {
+                if (Array.isArray(sh.genres)) sh.genres.forEach(add);
+                if (sh.genre) add(sh.genre);
+            });
+        }
+    }
+    if (sys.classifications && Array.isArray(sys.classifications.genres)) {
+        sys.classifications.genres.forEach(add);
+    }
+    if (Array.isArray(sys.genres)) {
+        sys.genres.forEach(add);
+    }
+
+    const modal = document.getElementById('shopModal');
+    const genreSel = findGenreSelect116(modal);
+    if (genreSel) {
+        [...genreSel.options].forEach((opt) => add(opt.value || opt.textContent));
+    }
+
+    if (out.length === 0) {
+        ['家系', 'ラーメンショップ', '佐野ラーメン', 'その他'].forEach(add);
+    }
+    return out;
+};
+
+const getShopInitialGenres116 = (shop) => {
+    if (!shop) return [];
+    const seen = new Set();
+    const out = [];
+    const add = (g) => {
+        const s = trimG116(g);
+        if (s && !seen.has(s)) {
+            seen.add(s);
+            out.push(s);
+        }
+    };
+    if (Array.isArray(shop.genres)) shop.genres.forEach(add);
+    if (shop.genre) add(shop.genre);
+    return out;
+};
+
+const placeGenreBarNearField116 = (modal, bar) => {
+    const genreSel = findGenreSelect116(modal);
+    if (genreSel && genreSel.parentElement) {
+        if (genreSel.nextElementSibling !== bar) {
+            genreSel.insertAdjacentElement('afterend', bar);
+        }
+        return;
+    }
+
+    if (modal) {
+        const labelEl = [...modal.querySelectorAll('label, span, p, div, h3, h4')].find((el) => {
+            if (el.id === 'sGenreChips116' || el.closest('#sGenreChips116')) return false;
+            if (el.children.length > 3) return false;
+            const t = (el.textContent || '').trim();
+            if (!t || t.length > 24) return false;
+            if (t.includes('駐車場') || t.includes('駐輪場')) return false;
+            return t.includes('ジャンル') || t.includes('系統');
+        });
+        if (labelEl) {
+            const container = labelEl.closest('div') || labelEl.parentElement;
+            if (container && bar.parentElement !== container) {
+                container.appendChild(bar);
+            }
+            return;
+        }
+    }
+
+    const form = modal ? (modal.querySelector('form') || modal) : null;
+    if (form && bar.parentElement !== form) {
+        form.insertBefore(bar, form.firstChild);
+    }
+};
+
+const mountGenreChips116 = (selectedArr) => {
+    const modal = document.getElementById('shopModal');
+    if (!modal) return;
+
+    let bar = document.getElementById('sGenreChips116');
+    if (!bar) {
+        bar = document.createElement('div');
+        bar.id = 'sGenreChips116';
+    }
+    bar.className = 'flex flex-wrap gap-1.5 mt-2';
+
+    [...document.querySelectorAll('#sGenreChips116')].forEach((el) => {
+        if (el !== bar) el.remove();
+    });
+
+    placeGenreBarNearField116(modal, bar);
+
+    const candidates = getGenreList116();
+    const seen = new Set();
+    const allGenres = [];
+    [...candidates, ...(selectedArr || [])].forEach((g) => {
+        const s = trimG116(g);
+        if (s && !seen.has(s)) {
+            seen.add(s);
+            allGenres.push(s);
+        }
+    });
+
+    const activeSet = new Set((selectedArr || []).map(trimG116).filter(Boolean));
+    bar.innerHTML = allGenres.map((g) => {
+        const active = activeSet.has(g);
+        return `<button type="button" data-g116="${esc(g)}" aria-pressed="${active ? 'true' : 'false'}" class="px-2.5 py-1 rounded-xl text-xs font-bold border transition ${active ? 'bg-ramen-red text-white border-ramen-red' : 'bg-white text-stone-700 border-stone-300 hover:bg-ramen-cream'}">${active ? '✓ ' : ''}${esc(g)}</button>`;
+    }).join('');
+};
+
+const setActiveGenres116 = (arr) => {
+    const seen = new Set();
+    const clean = [];
+    (arr || []).forEach((g) => {
+        const s = trimG116(g);
+        if (s && !seen.has(s)) {
+            seen.add(s);
+            clean.push(s);
+        }
+    });
+    window.__db88SelectedGenres116 = clean;
+    const modal = document.getElementById('shopModal');
+    const sel = findGenreSelect116(modal) || document.getElementById('sGenreSelect');
+    if (sel && clean.length > 0) {
+        sel.value = clean[0];
+    }
+    mountGenreChips116(clean);
+};
+
+const openAndSyncGenres116 = () => {
+    setTimeout(() => {
+        const editId = document.getElementById('shopEditId')?.value || '';
+        const db = getDb116();
+        const shop = editId && db ? (db.shops || []).find((s) => s.id === editId) : null;
+        const initial = shop ? getShopInitialGenres116(shop) : [getGenreList116()[0] || 'その他'];
+        setActiveGenres116(initial);
+    }, 30);
+};
+
+// モーダルが非表示→表示に切り替わった瞬間を検知して毎回同期する（ループしないよう開閉状態のみ監視）
+const bindShopModalOpenDetect116 = () => {
+    if (window.__db88ModalOpenDetectBound116) return;
+    window.__db88ModalOpenDetectBound116 = true;
+
+    let lastVisible = false;
+    setInterval(() => {
+        const modal = document.getElementById('shopModal');
+        const isVisible = Boolean(
+            modal &&
+            !modal.classList.contains('hidden') &&
+            window.getComputedStyle(modal).display !== 'none'
+        );
+        if (isVisible && !lastVisible) {
+            openAndSyncGenres116();
+        }
+        lastVisible = isVisible;
+    }, 120);
+};
+
+if (!window.__db88Patch116EventsBound) {
+    window.__db88Patch116EventsBound = true;
+
+    document.addEventListener('click', (e) => {
+        const chip = e.target.closest('#sGenreChips116 [data-g116]');
+        if (chip) {
+            e.preventDefault();
+            e.stopPropagation();
+            const g = trimG116(chip.dataset.g116);
+            if (!g) return;
+            const cur = Array.isArray(window.__db88SelectedGenres116) ? [...window.__db88SelectedGenres116] : [];
+            const next = cur.includes(g) ? cur.filter((x) => x !== g) : [...cur, g];
+            setActiveGenres116(next);
+            return;
+        }
+
+        const trigger = e.target.closest('button, [role="button"], a');
+        if (trigger) {
+            const txt = (trigger.textContent || '').trim();
+            const idOrAttr = `${trigger.id || ''} ${trigger.className || ''}`;
+            if (/shop/i.test(idOrAttr) || txt.includes('店舗') || txt.includes('新規') || txt.includes('編集')) {
+                openAndSyncGenres116();
+            }
+        }
+    });
+
+    const shopForm = document.getElementById('shopForm');
+    if (shopForm) {
+        shopForm.addEventListener('submit', () => {
+            const picked = Array.isArray(window.__db88SelectedGenres116) ? [...window.__db88SelectedGenres116] : [];
+            if (picked.length === 0) return;
+            const editId = document.getElementById('shopEditId')?.value || '';
+            const shopName = (document.getElementById('sNameInput')?.value || '').trim();
+            const dbId = viewState.activeDbId;
+            setTimeout(() => {
+                const db = (sys.databases || []).find((d) => d.id === dbId);
+                if (!db || !Array.isArray(db.shops)) return;
+                const target = editId
+                    ? db.shops.find((s) => s.id === editId)
+                    : db.shops.find((s) => s.name === shopName);
+                if (target) {
+                    target.genres = picked;
+                    target.genre = picked[0];
+                }
+            }, 50);
+        });
+    }
+}
+
+bindShopModalOpenDetect116();
+openAndSyncGenres116();
+
+                })(ctxObj);
+            } catch (err) {
+                console.error('同梱パッチ実行エラー (db88_patch_1.1.6.js):', err);
+            }
+        }
+
+function initApp() {
             const localData = loadLocalFallback();
             if (localData) {
                 mergeSystemPayload(localData);
@@ -4202,6 +6341,7 @@
         }
 
         initApp();
+        setTimeout(() => { try { runBundledPatches111To116(typeof getActiveDb === 'function' ? getActiveDb() : null); } catch (_) {} }, 150);
     </script>
 </body>
 </html>
