@@ -4593,6 +4593,223 @@
             }
             try { window.__patch116Run(); } catch (e) { console.error('patch-116 error:', e); }
         }
+// =========================================================================
+// 上書き防止ガード（Overwrite Protection Guard for Index2_2）
+// 既存機能・分割保存・パッチ群（111-116 / 1.1.6 / 1.1.7 / 1.1.8 / 1.1.9）と共存
+// =========================================================================
+(function installOverwriteProtection() {
+    if (window.__db88OverwriteGuardInstalled) return;
+    window.__db88OverwriteGuardInstalled = true;
+
+    const GUARD_CONFIG = {
+        postSaveCooldownMs: 1200,
+        revisionPrefix: 'rev-'
+    };
+
+    const guardState = {
+        savingCount: 0,
+        lastSaveCompletedAt: 0,
+        dbRevisions: new Map(),      // dbId -> numeric timestamp or string version
+        protectedShopIds: new Map(),   // `${dbId}:${shopId}` -> updatedAtMs
+        protectedVisitIds: new Map()   // `${dbId}:${visitId}` -> updatedAtMs
+    };
+
+    function parseTimeMs(val) {
+        if (!val) return 0;
+        if (typeof val === 'number') return Number.isFinite(val) ? val : 0;
+        const t = Date.parse(String(val));
+        return Number.isFinite(t) ? t : 0;
+    }
+
+    function isInSaveProtectionWindow() {
+        return guardState.savingCount > 0 || (Date.now() - guardState.lastSaveCompletedAt) < GUARD_CONFIG.postSaveCooldownMs;
+    }
+
+    function isUserActivelyEditingModalOrInput() {
+        const active = document.activeElement;
+        if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT')) {
+            if (
+                active.closest('#visitModal, #shopModal, #dbOwnerSettingsModal, #createDbModal, #inviteRoleModal, #dbPasswordModal') ||
+                active.id === 'customPatchJsonInput' ||
+                active.id === 'customJsPatchCodeInput'
+            ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // 1. mergeSystemPayload の上書き防止ラップ
+    if (typeof mergeSystemPayload === 'function' && !mergeSystemPayload.__overwriteProtected) {
+        const origMerge = mergeSystemPayload;
+        mergeSystemPayload = function protectedMergeSystemPayload(data) {
+            if (!data || typeof data !== 'object') return;
+
+            const prevDbs = Array.isArray(sys?.databases) ? sys.databases : [];
+            const prevMap = new Map(prevDbs.map((d) => [d.id, d]));
+
+            // 保存直後の外部スナップショットによる host / users / invites / runtimeJsPatches の巻き戻し防止
+            const guardedData = Object.assign({}, data);
+            if (isInSaveProtectionWindow()) {
+                if (!guardedData.hostEmail && sys?.hostEmail) guardedData.hostEmail = sys.hostEmail;
+                if (!guardedData.hostUid && sys?.hostUid) guardedData.hostUid = sys.hostUid;
+                if ((!Array.isArray(guardedData.users) || guardedData.users.length === 0) && Array.isArray(sys?.users) && sys.users.length > 0) {
+                    guardedData.users = sys.users;
+                }
+                if ((!Array.isArray(guardedData.invites) || guardedData.invites.length === 0) && Array.isArray(sys?.invites) && sys.invites.length > 0) {
+                    guardedData.invites = sys.invites;
+                }
+                if ((!Array.isArray(guardedData.runtimeJsPatches) || guardedData.runtimeJsPatches.length === 0) && Array.isArray(sys?.runtimeJsPatches) && sys.runtimeJsPatches.length > 0) {
+                    guardedData.runtimeJsPatches = sys.runtimeJsPatches;
+                }
+            }
+
+            if (Array.isArray(guardedData.databases)) {
+                guardedData.databases = guardedData.databases.map((inc) => {
+                    const prev = prevMap.get(inc.id);
+                    if (!prev) return inc;
+
+                    const incTime = parseTimeMs(inc.updatedAt);
+                    const prevTime = Math.max(parseTimeMs(prev.updatedAt), guardState.dbRevisions.get(inc.id) || 0);
+                    const isStaleIncoming = isInSaveProtectionWindow() || (prevTime > 0 && incTime > 0 && incTime < prevTime);
+
+                    const merged = Object.assign({}, inc);
+
+                    // メタ情報の古い上書きを防止
+                    if (isStaleIncoming) {
+                        if (prev.title) merged.title = prev.title;
+                        if (prev.ownerName) merged.ownerName = prev.ownerName;
+                        if (prev.description !== undefined) merged.description = prev.description;
+                        if (prev.viewPassword !== undefined) merged.viewPassword = prev.viewPassword;
+                        if (prev.schemaVersion) merged.schemaVersion = prev.schemaVersion;
+                    }
+
+                    // 店舗配列・件数の巻き戻し防止
+                    const prevShops = Array.isArray(prev.shops) ? prev.shops : [];
+                    const incShops = Array.isArray(inc.shops) ? inc.shops : [];
+                    if (incShops.length > 0) {
+                        merged.shops = incShops;
+                        merged.shopCount = incShops.length;
+                    } else if (prevShops.length > 0 || (typeof hydratedDbIds !== 'undefined' && hydratedDbIds.has(inc.id))) {
+                        merged.shops = prevShops;
+                        merged.shopCount = prevShops.length;
+                    } else if (isStaleIncoming && typeof prev.shopCount === 'number') {
+                        merged.shopCount = Math.max(prev.shopCount, Number(inc.shopCount) || 0);
+                    }
+
+                    // 訪問履歴配列・件数の巻き戻し防止
+                    const prevVisits = Array.isArray(prev.visits) ? prev.visits : [];
+                    const incVisits = Array.isArray(inc.visits) ? inc.visits : [];
+                    if (incVisits.length > 0) {
+                        merged.visits = incVisits;
+                        merged.visitCount = incVisits.length;
+                    } else if (prevVisits.length > 0 || (typeof hydratedDbIds !== 'undefined' && hydratedDbIds.has(inc.id))) {
+                        merged.visits = prevVisits;
+                        merged.visitCount = prevVisits.length;
+                    } else if (isStaleIncoming && typeof prev.visitCount === 'number') {
+                        merged.visitCount = Math.max(prev.visitCount, Number(inc.visitCount) || 0);
+                    }
+
+                    return merged;
+                });
+            }
+
+            return origMerge.call(this, guardedData);
+        };
+        mergeSystemPayload.__overwriteProtected = true;
+    }
+
+    // 2. hydrateDatabaseDetails でのローカル最新編集保護
+    if (typeof hydrateDatabaseDetails === 'function' && !hydrateDatabaseDetails.__overwriteProtected) {
+        const origHydrate = hydrateDatabaseDetails;
+        hydrateDatabaseDetails = async function protectedHydrateDatabaseDetails(dbId, force = false) {
+            if (isInSaveProtectionWindow() && !force) {
+                return (sys?.databases || []).find((d) => d.id === dbId) || null;
+            }
+            const dbBefore = (sys?.databases || []).find((d) => d.id === dbId);
+            const localShopsMap = new Map(((dbBefore && dbBefore.shops) || []).map((s) => [s.id, s]));
+            const localVisitsMap = new Map(((dbBefore && dbBefore.visits) || []).map((v) => [v.id, v]));
+
+            const res = await origHydrate.call(this, dbId, force);
+            if (res) {
+                const nowMs = Date.now();
+                if (Array.isArray(res.shops)) {
+                    res.shops = res.shops.map((remoteShop) => {
+                        const protMs = guardState.protectedShopIds.get(`${dbId}:${remoteShop.id}`) || 0;
+                        const localShop = localShopsMap.get(remoteShop.id);
+                        if (localShop && protMs > 0 && (nowMs - protMs) < 5000) {
+                            return localShop;
+                        }
+                        return remoteShop;
+                    });
+                }
+                if (Array.isArray(res.visits)) {
+                    res.visits = res.visits.map((remoteVisit) => {
+                        const protMs = guardState.protectedVisitIds.get(`${dbId}:${remoteVisit.id}`) || 0;
+                        const localVisit = localVisitsMap.get(remoteVisit.id);
+                        if (localVisit && protMs > 0 && (nowMs - protMs) < 5000) {
+                            return localVisit;
+                        }
+                        return remoteVisit;
+                    });
+                }
+            }
+            return res;
+        };
+        hydrateDatabaseDetails.__overwriteProtected = true;
+    }
+
+    // 3. saveSystem の直列化＆保護タイムスタンプ記録
+    let saveQueuePromise = Promise.resolve();
+    if (typeof saveSystem === 'function' && !saveSystem.__overwriteProtected) {
+        const origSaveSystem = saveSystem;
+        saveSystem = function queuedProtectedSaveSystem(options = {}) {
+            const runTask = async () => {
+                guardState.savingCount += 1;
+                const nowIso = new Date().toISOString();
+                const nowMs = Date.now();
+
+                if (sys && typeof sys === 'object') {
+                    sys.updatedAt = nowIso;
+                }
+                const targetDb = options && options.targetDb ? options.targetDb : null;
+                if (targetDb && targetDb.id) {
+                    targetDb.updatedAt = nowIso;
+                    guardState.dbRevisions.set(targetDb.id, nowMs);
+
+                    const dirtyShops = options?.splitOptions?.dirtyShopIds || [];
+                    dirtyShops.forEach((sid) => guardState.protectedShopIds.set(`${targetDb.id}:${sid}`, nowMs));
+
+                    const dirtyVisits = options?.splitOptions?.dirtyVisitIds || [];
+                    dirtyVisits.forEach((vid) => guardState.protectedVisitIds.set(`${targetDb.id}:${vid}`, nowMs));
+                }
+
+                try {
+                    return await origSaveSystem.call(this, options);
+                } finally {
+                    guardState.savingCount = Math.max(0, guardState.savingCount - 1);
+                    guardState.lastSaveCompletedAt = Date.now();
+                }
+            };
+
+            saveQueuePromise = saveQueuePromise.then(runTask, runTask);
+            return saveQueuePromise;
+        };
+        saveSystem.__overwriteProtected = true;
+    }
+
+    // 4. 編集中モーダル／入力欄を壊さない安全 render ラッパー
+    if (typeof render === 'function' && !render.__overwriteProtected) {
+        const origRender = render;
+        render = function protectedRender(...args) {
+            if (isUserActivelyEditingModalOrInput()) {
+                return;
+            }
+            return origRender.apply(this, args);
+        };
+        render.__overwriteProtected = true;
+    }
+})();
 
         bindEvents();
         initFirebaseRealtime();
