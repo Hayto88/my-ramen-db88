@@ -1633,14 +1633,116 @@
             };
         }
 
-function persistLocalCache() {
+let syncGeneration = 0;
+
+function nextSyncGeneration() {
+    syncGeneration += 1;
+    return syncGeneration;
+}
+
+function isLatestSyncGeneration(gen) {
+    return gen === syncGeneration;
+}
+
+function hasPhotoValue(val) {
+    return typeof val === 'string' && val.trim().length > 0;
+}
+
+function mergeSafePhotoFields(nextItem, prevItem) {
+    if (!nextItem || !prevItem) return nextItem;
+
+    if (!hasPhotoValue(nextItem.callPhoto) && hasPhotoValue(prevItem.callPhoto)) {
+        nextItem.callPhoto = prevItem.callPhoto;
+    }
+    if (!hasPhotoValue(nextItem.photo) && hasPhotoValue(prevItem.photo)) {
+        nextItem.photo = prevItem.photo;
+    }
+    if (Array.isArray(nextItem.menus) && Array.isArray(prevItem.menus)) {
+        const prevMenuById = new Map(
+            prevItem.menus
+                .filter((m) => m && m.id !== undefined && m.id !== null)
+                .map((m) => [String(m.id), m])
+        );
+        nextItem.menus = nextItem.menus.map((m) => {
+            if (!m || m.id === undefined || m.id === null) return m;
+            const oldMenu = prevMenuById.get(String(m.id));
+            if (!hasPhotoValue(m.photo) && oldMenu && hasPhotoValue(oldMenu.photo)) {
+                return { ...m, photo: oldMenu.photo };
+            }
+            return m;
+        });
+    }
+    return nextItem;
+}
+
+function preserveSystemPhotos(nextSystemObj, prevSystemObj) {
+    if (!nextSystemObj || !prevSystemObj) return nextSystemObj;
+
+    const prevDbById = new Map(
+        (prevSystemObj.databases || [])
+            .filter((db) => db && db.id !== undefined && db.id !== null)
+            .map((db) => [String(db.id), db])
+    );
+
+    nextSystemObj.databases = (nextSystemObj.databases || []).map((db) => {
+        if (!db || db.id === undefined || db.id === null) return db;
+        const prevDb = prevDbById.get(String(db.id));
+        if (!prevDb) return db;
+
+        const prevShopById = new Map(
+            (prevDb.shops || [])
+                .filter((s) => s && s.id !== undefined && s.id !== null)
+                .map((s) => [String(s.id), s])
+        );
+        const prevVisitById = new Map(
+            (prevDb.visits || [])
+                .filter((v) => v && v.id !== undefined && v.id !== null)
+                .map((v) => [String(v.id), v])
+        );
+
+        const nextShops = (db.shops || []).map((s) => {
+            if (!s || s.id === undefined || s.id === null) return s;
+            return mergeSafePhotoFields({ ...s }, prevShopById.get(String(s.id)));
+        });
+
+        const nextVisits = (db.visits || []).map((v) => {
+            if (!v || v.id === undefined || v.id === null) return v;
+            return mergeSafePhotoFields({ ...v }, prevVisitById.get(String(v.id)));
+        });
+
+        return {
+            ...db,
+            shops: nextShops,
+            visits: nextVisits,
+        };
+    });
+
+    return nextSystemObj;
+}
+
+function readExistingLocalCache() {
     try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(sys));
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw);
+    } catch (_) {
+        return null;
+    }
+}
+
+function persistLocalCache(gen = null) {
+    if (gen !== null && !isLatestSyncGeneration(gen)) {
+        return;
+    }
+    try {
+        const prevCached = readExistingLocalCache();
+        const candidate = typeof clone === 'function' ? clone(sys) : sys;
+        const safePayload = preserveSystemPhotos(candidate, prevCached);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(safePayload));
     } catch (_) {
         // 容量オーバーなどで保存できない場合も、元データの写真を削って上書きしない
     }
 }
-
 
         // 分割保存先（DBメタ／店舗／訪問履歴）からDB詳細データを読み込む
         async function hydrateDatabaseDetails(dbId, force = false) {
