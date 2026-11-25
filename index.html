@@ -1633,32 +1633,14 @@
             };
         }
 
-function stripPhotosForCache(systemObj) {
-    const copy = clone(systemObj);
-    (copy.databases || []).forEach((db) => {
-        (db.shops || []).forEach((s) => {
-            s.callPhoto = '';
-            (s.menus || []).forEach((m) => {
-                m.photo = '';
-            });
-        });
-        (db.visits || []).forEach((v) => {
-            v.photo = '';
-        });
-    });
-    return copy;
-}
-
 function persistLocalCache() {
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(sys));
     } catch (_) {
-        try {
-            const slim = stripPhotosForCache(sys);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(slim));
-        } catch (__) {}
+        // 容量オーバーなどで保存できない場合も、元データの写真を削って上書きしない
     }
 }
+
 
         // 分割保存先（DBメタ／店舗／訪問履歴）からDB詳細データを読み込む
         async function hydrateDatabaseDetails(dbId, force = false) {
