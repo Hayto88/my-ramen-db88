@@ -4697,232 +4697,358 @@
             try { window.__patch116Run(); } catch (e) { console.error('patch-116 error:', e); }
         }
 // =========================================================================
-// 上書き防止ガード（写真消失防止・ロールバック防止・最新キャッシュ維持）
+// 追加上書き防止ガード（既存2モジュール互換・消去例外＆JSON優先・目印バッジ対応版）
 // =========================================================================
-(function installOverwriteProtection() {
-    if (window.__db88OverwriteGuardInstalled) return;
-    window.__db88OverwriteGuardInstalled = true;
+(function installDropInOverwriteGuard() {
+    const GUARD_VERSION = 'v3.0';
 
-    const GUARD_CONFIG = {
-        postSaveCooldownMs: 1200
-    };
+    if (window.__db88DropInGuardInstalled) return;
+    window.__db88DropInGuardInstalled = true;
+    window.__db88GuardVersion = GUARD_VERSION;
 
-    const guardState = {
-        savingCount: 0,
-        lastSaveCompletedAt: 0,
-        dbRevisions: new Map(),
-        protectedShopIds: new Map(),
-        protectedVisitIds: new Map()
-    };
-
-    function parseTimeMs(val) {
-        if (!val) return 0;
-        if (typeof val === 'number') return Number.isFinite(val) ? val : 0;
-        const t = Date.parse(String(val));
-        return Number.isFinite(t) ? t : 0;
+    // 既存ガード（上書き防止ガード修正版）が未実行の場合のみ起動するフォールバック
+    if (!window.__db88OverwriteGuardInstalled && typeof installOverwriteProtection === 'function') {
+        try {
+            installOverwriteProtection();
+        } catch (err) {
+            console.warn('[DropInGuard] installOverwriteProtection fallback warning:', err);
+        }
     }
 
-    function isInSaveProtectionWindow() {
-        return guardState.savingCount > 0 || (Date.now() - guardState.lastSaveCompletedAt) < GUARD_CONFIG.postSaveCooldownMs;
+    const exceptionState = {
+        jsonImportActive: false,
+        jsonImportUntilMs: 0,
+        deletedDbIds: new Set(),
+        deletedShopKeys: new Set(),  // `${dbId}:${shopId}`
+        deletedVisitKeys: new Set(), // `${dbId}:${visitId}`
+        clearedPhotoKeys: new Set()  // `${dbId}:${kind}:${id}:${field}`
+    };
+
+    function isJsonImportPriorityActive() {
+        if (exceptionState.jsonImportActive) return true;
+        return Date.now() < exceptionState.jsonImportUntilMs;
     }
 
-    function isUserActivelyEditingModalOrInput() {
-        const active = document.activeElement;
-        if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT')) {
-            if (
-                active.closest('#visitModal, #shopModal, #dbOwnerSettingsModal, #createDbModal, #inviteRoleModal, #dbPasswordModal') ||
-                active.id === 'customPatchJsonInput' ||
-                active.id === 'customJsPatchCodeInput'
-            ) {
-                return true;
+    function setJsonImportPriority(active, holdMs = 3000) {
+        exceptionState.jsonImportActive = Boolean(active);
+        if (active) {
+            exceptionState.jsonImportUntilMs = Date.now() + holdMs;
+        } else {
+            exceptionState.jsonImportUntilMs = Date.now() + Math.min(holdMs, 1500);
+        }
+    }
+
+    // 外部・ボタン・パッチから呼び出せる例外制御API
+    window.__db88GuardExceptions = {
+        version: GUARD_VERSION,
+        beginJsonImport(holdMs = 3000) {
+            setJsonImportPriority(true, holdMs);
+            if (typeof nextSyncGeneration === 'function') nextSyncGeneration();
+        },
+        endJsonImport(holdMs = 1500) {
+            setJsonImportPriority(false, holdMs);
+            if (typeof nextSyncGeneration === 'function') nextSyncGeneration();
+        },
+        markDeletedDb(dbId) {
+            if (dbId !== undefined && dbId !== null) {
+                exceptionState.deletedDbIds.add(String(dbId));
+            }
+            if (typeof nextSyncGeneration === 'function') nextSyncGeneration();
+        },
+        markDeletedShop(dbId, shopId) {
+            if (dbId != null && shopId != null) {
+                exceptionState.deletedShopKeys.add(`${String(dbId)}:${String(shopId)}`);
+            }
+            if (typeof nextSyncGeneration === 'function') nextSyncGeneration();
+        },
+        markDeletedVisit(dbId, visitId) {
+            if (dbId != null && visitId != null) {
+                exceptionState.deletedVisitKeys.add(`${String(dbId)}:${String(visitId)}`);
+            }
+            if (typeof nextSyncGeneration === 'function') nextSyncGeneration();
+        },
+        markClearedPhoto(dbId, kind, id, field = 'photo') {
+            if (dbId != null && id != null) {
+                exceptionState.clearedPhotoKeys.add(`${String(dbId)}:${kind}:${String(id)}:${field}`);
+            }
+            if (typeof nextSyncGeneration === 'function') nextSyncGeneration();
+        },
+        clearAllDeletedMarks() {
+            exceptionState.deletedDbIds.clear();
+            exceptionState.deletedShopKeys.clear();
+            exceptionState.deletedVisitKeys.clear();
+            exceptionState.clearedPhotoKeys.clear();
+        },
+        getState() {
+            return {
+                version: GUARD_VERSION,
+                jsonImportPriority: isJsonImportPriorityActive(),
+                deletedDbIds: Array.from(exceptionState.deletedDbIds),
+                deletedShopKeys: Array.from(exceptionState.deletedShopKeys),
+                deletedVisitKeys: Array.from(exceptionState.deletedVisitKeys),
+                clearedPhotoKeys: Array.from(exceptionState.clearedPhotoKeys)
+            };
+        }
+    };
+
+    // 2人が更新済みか一目でわかる目印バッジを画面右下に表示
+    function mountVersionBadge() {
+        if (typeof document === 'undefined') return;
+        const badgeId = 'db88-guard-version-badge';
+        if (document.getElementById(badgeId)) return;
+
+        const renderBadge = () => {
+            if (!document.body || document.getElementById(badgeId)) return;
+            const badge = document.createElement('div');
+            badge.id = badgeId;
+            badge.textContent = `Guard ${GUARD_VERSION}`;
+            badge.title = `上書き防止ガード ${GUARD_VERSION} 適用済み`;
+            badge.style.cssText = [
+                'position:fixed',
+                'right:10px',
+                'bottom:10px',
+                'z-index:99999',
+                'padding:3px 8px',
+                'font-size:11px',
+                'line-height:1.2',
+                'font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace',
+                'color:#e2e8f0',
+                'background:rgba(15,23,42,0.78)',
+                'border:1px solid rgba(148,163,184,0.35)',
+                'border-radius:999px',
+                'pointer-events:none',
+                'user-select:none',
+                'backdrop-filter:blur(4px)'
+            ].join(';');
+            document.body.appendChild(badge);
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', renderBadge, { once: true });
+        } else {
+            renderBadge();
+        }
+    }
+
+    function safeClone(obj) {
+        if (typeof clone === 'function') {
+            try { return clone(obj); } catch (_) {}
+        }
+        try {
+            return JSON.parse(JSON.stringify(obj));
+        } catch (_) {
+            return obj;
+        }
+    }
+
+    function hasNonEmptyPhoto(val) {
+        if (typeof hasPhotoData === 'function') return hasPhotoData(val);
+        return typeof val === 'string' && val.trim().length > 0;
+    }
+
+    function mergeItemRespectingExceptions(nextItem, prevItem, dbId, kind) {
+        if (!nextItem || !prevItem || nextItem.id == null) return nextItem;
+        const idStr = String(nextItem.id);
+        const copy = Object.assign({}, nextItem);
+
+        // JSON読み込み優先時はJSON側の値・空状態をそのまま採用
+        if (isJsonImportPriorityActive()) {
+            return copy;
+        }
+
+        const photoCleared =
+            exceptionState.clearedPhotoKeys.has(`${dbId}:${kind}:${idStr}:photo`) ||
+            exceptionState.clearedPhotoKeys.has(`${dbId}:${kind}:${idStr}:callPhoto`);
+
+        if (typeof mergeSafePhotoFields === 'function') {
+            const merged = mergeSafePhotoFields(Object.assign({}, copy), prevItem);
+            if (photoCleared) {
+                if (!hasNonEmptyPhoto(copy.photo)) merged.photo = copy.photo ?? '';
+                if (!hasNonEmptyPhoto(copy.callPhoto)) merged.callPhoto = copy.callPhoto ?? '';
+            }
+            return merged;
+        }
+
+        if (!photoCleared) {
+            if (!hasNonEmptyPhoto(copy.callPhoto) && hasNonEmptyPhoto(prevItem.callPhoto)) {
+                copy.callPhoto = prevItem.callPhoto;
+            }
+            if (!hasNonEmptyPhoto(copy.photo) && hasNonEmptyPhoto(prevItem.photo)) {
+                copy.photo = prevItem.photo;
             }
         }
-        return false;
+        return copy;
     }
 
-    function mergeListWithPhotoGuard(nextList, prevList, protectedMap, dbId) {
-        if (!Array.isArray(nextList)) return Array.isArray(prevList) ? prevList : [];
-        const prevMap = new Map(
-            (Array.isArray(prevList) ? prevList : [])
-                .filter((x) => x && x.id !== undefined && x.id !== null)
-                .map((x) => [String(x.id), x])
+    function protectDatabasesPayload(incomingDbs, currentDbs) {
+        if (!Array.isArray(incomingDbs)) return incomingDbs;
+
+        if (isJsonImportPriorityActive()) {
+            return incomingDbs.filter((d) => d && d.id != null && !exceptionState.deletedDbIds.has(String(d.id)));
+        }
+
+        const currentMap = new Map(
+            (Array.isArray(currentDbs) ? currentDbs : [])
+                .filter((d) => d && d.id !== undefined && d.id !== null)
+                .map((d) => [String(d.id), d])
         );
-        const nowMs = Date.now();
 
-        return nextList.map((item) => {
-            if (!item || item.id === undefined || item.id === null) return item;
-            const key = String(item.id);
-            const prevItem = prevMap.get(key);
-            const protMs = protectedMap ? (protectedMap.get(`${dbId}:${key}`) || 0) : 0;
+        return incomingDbs
+            .filter((incDb) => incDb && incDb.id != null && !exceptionState.deletedDbIds.has(String(incDb.id)))
+            .map((incDb) => {
+                const dbIdStr = String(incDb.id);
+                const curDb = currentMap.get(dbIdStr);
+                if (!curDb) return incDb;
 
-            if (prevItem && protMs > 0 && (nowMs - protMs) < 5000) {
-                return mergeSafePhotoFields(Object.assign({}, prevItem), item);
-            }
-            return mergeSafePhotoFields(Object.assign({}, item), prevItem);
-        });
+                const mergedDb = Object.assign({}, incDb);
+
+                const curShops = (Array.isArray(curDb.shops) ? curDb.shops : [])
+                    .filter((s) => s && s.id != null && !exceptionState.deletedShopKeys.has(`${dbIdStr}:${String(s.id)}`));
+                const incShops = (Array.isArray(incDb.shops) ? incDb.shops : [])
+                    .filter((s) => s && s.id != null && !exceptionState.deletedShopKeys.has(`${dbIdStr}:${String(s.id)}`));
+
+                if (incShops.length > 0) {
+                    const curShopMap = new Map(curShops.map((s) => [String(s.id), s]));
+                    mergedDb.shops = incShops.map((s) => mergeItemRespectingExceptions(s, curShopMap.get(String(s.id)), dbIdStr, 'shop'));
+                    mergedDb.shopCount = mergedDb.shops.length;
+                } else if (curShops.length > 0) {
+                    mergedDb.shops = safeClone(curShops);
+                    mergedDb.shopCount = curShops.length;
+                } else {
+                    mergedDb.shops = [];
+                    mergedDb.shopCount = 0;
+                }
+
+                const curVisits = (Array.isArray(curDb.visits) ? curDb.visits : [])
+                    .filter((v) => v && v.id != null && !exceptionState.deletedVisitKeys.has(`${dbIdStr}:${String(v.id)}`));
+                const incVisits = (Array.isArray(incDb.visits) ? incDb.visits : [])
+                    .filter((v) => v && v.id != null && !exceptionState.deletedVisitKeys.has(`${dbIdStr}:${String(v.id)}`));
+
+                if (incVisits.length > 0) {
+                    const curVisitMap = new Map(curVisits.map((v) => [String(v.id), v]));
+                    mergedDb.visits = incVisits.map((v) => mergeItemRespectingExceptions(v, curVisitMap.get(String(v.id)), dbIdStr, 'visit'));
+                    mergedDb.visitCount = mergedDb.visits.length;
+                } else if (curVisits.length > 0) {
+                    mergedDb.visits = safeClone(curVisits);
+                    mergedDb.visitCount = curVisits.length;
+                } else {
+                    mergedDb.visits = [];
+                    mergedDb.visitCount = 0;
+                }
+
+                return mergedDb;
+            });
     }
 
-    // 1. mergeSystemPayload の上書き・写真消失防止ラップ
-    if (typeof mergeSystemPayload === 'function' && !mergeSystemPayload.__overwriteProtected) {
-        const origMerge = mergeSystemPayload;
-        mergeSystemPayload = function protectedMergeSystemPayload(data) {
+    // 削除ボタン・JSON読込UI操作の自動検知
+    if (!window.__db88UiExceptionListenersAttached && typeof document !== 'undefined') {
+        window.__db88UiExceptionListenersAttached = true;
+
+        document.addEventListener('change', (ev) => {
+            const target = ev.target;
+            if (!target || target.tagName !== 'INPUT' || target.type !== 'file') return;
+            const acceptAttr = String(target.getAttribute('accept') || '').toLowerCase();
+            const fileName = String(target.files?.[0]?.name || '').toLowerCase();
+            if (acceptAttr.includes('json') || fileName.endsWith('.json')) {
+                window.__db88GuardExceptions.beginJsonImport(4000);
+                setTimeout(() => window.__db88GuardExceptions.endJsonImport(1500), 2500);
+            }
+        }, true);
+
+        document.addEventListener('click', (ev) => {
+            const btn = ev.target && typeof ev.target.closest === 'function'
+                ? ev.target.closest('button, [role="button"], input[type="button"], input[type="submit"]')
+                : null;
+            if (!btn) return;
+
+            const label = `${btn.id || ''} ${btn.className || ''} ${btn.textContent || ''}`;
+            const activeDbId =
+                (typeof currentDbId !== 'undefined' && currentDbId) ||
+                (typeof sys !== 'undefined' && sys?.activeDbId) ||
+                null;
+
+            if (/json.*(読込|インポート|復元|反映)|インポート|復元/.test(label)) {
+                window.__db88GuardExceptions.beginJsonImport(4000);
+                setTimeout(() => window.__db88GuardExceptions.endJsonImport(1500), 2500);
+                return;
+            }
+
+            if (/(削除|消去|抹消|破棄)/.test(label)) {
+                if (/db|データベース/i.test(label) && activeDbId) {
+                    window.__db88GuardExceptions.markDeletedDb(activeDbId);
+                } else if (/写真|画像/.test(label) && activeDbId) {
+                    window.__db88GuardExceptions.markClearedPhoto(activeDbId, 'shop', '*', 'photo');
+                    window.__db88GuardExceptions.markClearedPhoto(activeDbId, 'visit', '*', 'photo');
+                } else if (activeDbId) {
+                    if (typeof nextSyncGeneration === 'function') nextSyncGeneration();
+                }
+            }
+        }, true);
+    }
+
+    if (typeof mergeSystemPayload === 'function' && !mergeSystemPayload.__dropInGuarded) {
+        const prevMergeFn = mergeSystemPayload;
+        mergeSystemPayload = function dropInGuardedMergeSystemPayload(data) {
             if (!data || typeof data !== 'object') return;
-            const gen = nextSyncGeneration();
-
-            const prevDbs = Array.isArray(sys?.databases) ? sys.databases : [];
-            const prevMap = new Map(prevDbs.map((d) => [d.id, d]));
-
-            const guardedData = Object.assign({}, data);
-            if (isInSaveProtectionWindow()) {
-                if (!guardedData.hostEmail && sys?.hostEmail) guardedData.hostEmail = sys.hostEmail;
-                if (!guardedData.hostUid && sys?.hostUid) guardedData.hostUid = sys.hostUid;
-                if ((!Array.isArray(guardedData.users) || guardedData.users.length === 0) && Array.isArray(sys?.users) && sys.users.length > 0) {
-                    guardedData.users = sys.users;
-                }
-                if ((!Array.isArray(guardedData.invites) || guardedData.invites.length === 0) && Array.isArray(sys?.invites) && sys.invites.length > 0) {
-                    guardedData.invites = sys.invites;
-                }
-                if ((!Array.isArray(guardedData.runtimeJsPatches) || guardedData.runtimeJsPatches.length === 0) && Array.isArray(sys?.runtimeJsPatches) && sys.runtimeJsPatches.length > 0) {
-                    guardedData.runtimeJsPatches = sys.runtimeJsPatches;
-                }
+            const patchedData = Object.assign({}, data);
+            if (Array.isArray(patchedData.databases) && typeof sys !== 'undefined' && Array.isArray(sys?.databases)) {
+                patchedData.databases = protectDatabasesPayload(patchedData.databases, sys.databases);
             }
-
-            if (Array.isArray(guardedData.databases)) {
-                guardedData.databases = guardedData.databases.map((inc) => {
-                    const prev = prevMap.get(inc.id);
-                    if (!prev) return inc;
-
-                    const incTime = parseTimeMs(inc.updatedAt);
-                    const prevTime = Math.max(parseTimeMs(prev.updatedAt), guardState.dbRevisions.get(inc.id) || 0);
-                    const isStaleIncoming = isInSaveProtectionWindow() || (prevTime > 0 && incTime > 0 && incTime < prevTime);
-
-                    const merged = Object.assign({}, inc);
-
-                    if (isStaleIncoming) {
-                        if (prev.title) merged.title = prev.title;
-                        if (prev.ownerName) merged.ownerName = prev.ownerName;
-                        if (prev.description !== undefined) merged.description = prev.description;
-                        if (prev.viewPassword !== undefined) merged.viewPassword = prev.viewPassword;
-                        if (prev.schemaVersion) merged.schemaVersion = prev.schemaVersion;
-                    }
-
-                    const prevShops = Array.isArray(prev.shops) ? prev.shops : [];
-                    const incShops = Array.isArray(inc.shops) ? inc.shops : [];
-                    if (incShops.length > 0) {
-                        merged.shops = mergeListWithPhotoGuard(incShops, prevShops, guardState.protectedShopIds, inc.id);
-                        merged.shopCount = merged.shops.length;
-                    } else if (prevShops.length > 0 || (typeof hydratedDbIds !== 'undefined' && hydratedDbIds.has(inc.id))) {
-                        merged.shops = prevShops;
-                        merged.shopCount = prevShops.length;
-                    } else if (isStaleIncoming && typeof prev.shopCount === 'number') {
-                        merged.shopCount = Math.max(prev.shopCount, Number(inc.shopCount) || 0);
-                    }
-
-                    const prevVisits = Array.isArray(prev.visits) ? prev.visits : [];
-                    const incVisits = Array.isArray(inc.visits) ? inc.visits : [];
-                    if (incVisits.length > 0) {
-                        merged.visits = mergeListWithPhotoGuard(incVisits, prevVisits, guardState.protectedVisitIds, inc.id);
-                        merged.visitCount = merged.visits.length;
-                    } else if (prevVisits.length > 0 || (typeof hydratedDbIds !== 'undefined' && hydratedDbIds.has(inc.id))) {
-                        merged.visits = prevVisits;
-                        merged.visitCount = prevVisits.length;
-                    } else if (isStaleIncoming && typeof prev.visitCount === 'number') {
-                        merged.visitCount = Math.max(prev.visitCount, Number(inc.visitCount) || 0);
-                    }
-
-                    return merged;
-                });
-            }
-
-            const result = origMerge.call(this, guardedData);
-            if (isLatestSyncGeneration(gen) && typeof persistLocalCache === 'function') {
-                persistLocalCache(gen);
-            }
-            return result;
-        };
-        mergeSystemPayload.__overwriteProtected = true;
-    }
-
-    // 2. hydrateDatabaseDetails での写真消失防止・ローカル最新編集保護
-    if (typeof hydrateDatabaseDetails === 'function' && !hydrateDatabaseDetails.__overwriteProtected) {
-        const origHydrate = hydrateDatabaseDetails;
-        hydrateDatabaseDetails = async function protectedHydrateDatabaseDetails(dbId, force = false) {
-            const gen = nextSyncGeneration();
-            if (isInSaveProtectionWindow() && !force) {
-                return (sys?.databases || []).find((d) => d.id === dbId) || null;
-            }
-            const dbBefore = (sys?.databases || []).find((d) => d.id === dbId);
-            const prevShops = (dbBefore && dbBefore.shops) || [];
-            const prevVisits = (dbBefore && dbBefore.visits) || [];
-
-            const res = await origHydrate.call(this, dbId, force);
-            if (res && isLatestSyncGeneration(gen)) {
-                if (Array.isArray(res.shops)) {
-                    res.shops = mergeListWithPhotoGuard(res.shops, prevShops, guardState.protectedShopIds, dbId);
-                }
-                if (Array.isArray(res.visits)) {
-                    res.visits = mergeListWithPhotoGuard(res.visits, prevVisits, guardState.protectedVisitIds, dbId);
-                }
-                if (typeof persistLocalCache === 'function') {
-                    persistLocalCache(gen);
-                }
+            const res = prevMergeFn.call(this, patchedData);
+            if (typeof persistLocalCache === 'function') {
+                persistLocalCache();
             }
             return res;
         };
-        hydrateDatabaseDetails.__overwriteProtected = true;
+        mergeSystemPayload.__dropInGuarded = true;
     }
 
-    // 3. saveSystem の直列化・世代更新・保護タイムスタンプ記録
-    let saveQueuePromise = Promise.resolve();
-    if (typeof saveSystem === 'function' && !saveSystem.__overwriteProtected) {
-        const origSaveSystem = saveSystem;
-        saveSystem = function queuedProtectedSaveSystem(options = {}) {
-            const runTask = async () => {
-                nextSyncGeneration();
-                guardState.savingCount += 1;
-                const nowIso = new Date().toISOString();
-                const nowMs = Date.now();
-
-                if (sys && typeof sys === 'object') {
-                    sys.updatedAt = nowIso;
+    if (typeof STORAGE_KEY === 'string' && STORAGE_KEY && typeof localStorage !== 'undefined') {
+        const origSetItem = localStorage.setItem.bind(localStorage);
+        if (!localStorage.setItem.__db88CacheGuarded) {
+            localStorage.setItem = function guardedSetItem(key, value) {
+                if (key === STORAGE_KEY && typeof value === 'string' && !isJsonImportPriorityActive()) {
+                    try {
+                        const incomingObj = JSON.parse(value);
+                        const existingRaw = localStorage.getItem(STORAGE_KEY);
+                        if (existingRaw && incomingObj && typeof incomingObj === 'object') {
+                            const existingObj = JSON.parse(existingRaw);
+                            if (
+                                existingObj &&
+                                Array.isArray(existingObj.databases) &&
+                                existingObj.databases.length > 0 &&
+                                (!Array.isArray(incomingObj.databases) || incomingObj.databases.length === 0)
+                            ) {
+                                return;
+                            }
+                            if (Array.isArray(incomingObj.databases) && Array.isArray(existingObj?.databases)) {
+                                incomingObj.databases = protectDatabasesPayload(incomingObj.databases, existingObj.databases);
+                                if (typeof preserveSystemPhotos === 'function') {
+                                    preserveSystemPhotos(incomingObj, existingObj);
+                                }
+                                value = JSON.stringify(incomingObj);
+                            }
+                        }
+                    } catch (_) {}
                 }
-                const targetDb = options && options.targetDb ? options.targetDb : null;
-                if (targetDb && targetDb.id) {
-                    targetDb.updatedAt = nowIso;
-                    guardState.dbRevisions.set(targetDb.id, nowMs);
-
-                    const dirtyShops = options?.splitOptions?.dirtyShopIds || [];
-                    dirtyShops.forEach((sid) => guardState.protectedShopIds.set(`${targetDb.id}:${sid}`, nowMs));
-
-                    const dirtyVisits = options?.splitOptions?.dirtyVisitIds || [];
-                    dirtyVisits.forEach((vid) => guardState.protectedVisitIds.set(`${targetDb.id}:${vid}`, nowMs));
-                }
-
-                try {
-                    return await origSaveSystem.call(this, options);
-                } finally {
-                    guardState.savingCount = Math.max(0, guardState.savingCount - 1);
-                    guardState.lastSaveCompletedAt = Date.now();
-                }
+                return origSetItem(key, value);
             };
-
-            saveQueuePromise = saveQueuePromise.then(runTask, runTask);
-            return saveQueuePromise;
-        };
-        saveSystem.__overwriteProtected = true;
+            localStorage.setItem.__db88CacheGuarded = true;
+        }
     }
 
-    // 4. 編集中モーダル／入力欄を壊さない安全 render ラッパー
-    if (typeof render === 'function' && !render.__overwriteProtected) {
-        const origRender = render;
-        render = function protectedRender(...args) {
-            if (isUserActivelyEditingModalOrInput()) {
-                return;
+    if (!window.__db88UnhandledRejectionGuarded) {
+        window.__db88UnhandledRejectionGuarded = true;
+        window.addEventListener('unhandledrejection', (event) => {
+            const msg = String(event?.reason?.message || event?.reason || '');
+            if (msg.includes('firestore') || msg.includes('permission-denied') || msg.includes('network')) {
+                console.warn('[DropInGuard] Caught async sync rejection:', event.reason);
             }
-            return origRender.apply(this, args);
-        };
-        render.__overwriteProtected = true;
+        });
     }
+
+    mountVersionBadge();
+    console.info(`[DropInGuard] Version ${GUARD_VERSION} active`);
 })();
 
         bindEvents();
