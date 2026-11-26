@@ -5050,7 +5050,99 @@
     mountVersionBadge();
     console.info(`[DropInGuard] Version ${GUARD_VERSION} active`);
 })();
+(function installLoadingSafeVisitPhotoGuard() {
+    if (window.__db88LoadingSafeVisitPhotoGuardInstalled) return;
+    window.__db88LoadingSafeVisitPhotoGuardInstalled = true;
 
+    let isHydratingOrLoading = false;
+
+    function hasPhoto(val) {
+        return typeof val === 'string' && val.trim().length > 0;
+    }
+
+    function isExplicitPhotoClear(dbId, visitId) {
+        const exc = window.__db88GuardExceptions;
+        if (!exc || typeof exc.getState !== 'function') return false;
+        const st = exc.getState();
+        if (st?.jsonImportPriority) return true;
+        const key = `${String(dbId)}:${String(visitId)}:photo`;
+        return Array.isArray(st?.clearedPhotoKeys) && st.clearedPhotoKeys.includes(key);
+    }
+
+    function findExistingVisitPhoto(dbId, visitId) {
+        if (!dbId || !visitId) return '';
+
+        // 1. 現在のメモリ（sys.databases）から探す
+        try {
+            if (typeof sys !== 'undefined' && Array.isArray(sys?.databases)) {
+                const memDb = sys.databases.find((d) => String(d?.id) === String(dbId));
+                const memVisit = (memDb?.visits || []).find((v) => String(v?.id) === String(visitId));
+                if (hasPhoto(memVisit?.photo)) return memVisit.photo;
+            }
+        } catch (_) {}
+
+        // 2. localStorage キャッシュから探す
+        try {
+            const key = typeof STORAGE_KEY === 'string' && STORAGE_KEY ? STORAGE_KEY : 'my_ramen_db_multi_v2';
+            const raw = localStorage.getItem(key);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                const cDb = (parsed?.databases || []).find((d) => String(d?.id) === String(dbId));
+                const cVisit = (cDb?.visits || []).find((v) => String(v?.id) === String(visitId));
+                if (hasPhoto(cVisit?.photo)) return cVisit.photo;
+            }
+        } catch (_) {}
+
+        return '';
+    }
+
+    function guardVisitPhoto(visit, dbId) {
+        if (!visit || typeof visit !== 'object') return visit;
+        if (hasPhoto(visit.photo)) return visit;
+        if (isExplicitPhotoClear(dbId, visit.id)) return visit;
+
+        const fallbackPhoto = findExistingVisitPhoto(dbId, visit.id);
+        if (fallbackPhoto) {
+            return Object.assign({}, visit, { photo: fallbackPhoto });
+        }
+        return visit;
+    }
+
+    // 分割読み込み（hydrateDatabaseDetails）中をフラグで把握
+    if (typeof hydrateDatabaseDetails === 'function' && !hydrateDatabaseDetails.__loadingGuarded) {
+        const origHydrate = hydrateDatabaseDetails;
+        hydrateDatabaseDetails = async function guardedHydrateDatabaseDetails(...args) {
+            isHydratingOrLoading = true;
+            try {
+                return await origHydrate.apply(this, args);
+            } finally {
+                isHydratingOrLoading = false;
+            }
+        };
+        hydrateDatabaseDetails.__loadingGuarded = true;
+    }
+
+    // saveDbSplit 時に未完了／写真欠損の visit を補完
+    if (typeof saveDbSplit === 'function' && !saveDbSplit.__loadingSafeVisitGuarded) {
+        const origSaveDbSplit = saveDbSplit;
+        saveDbSplit = async function guardedSaveDbSplit(db, options = {}) {
+            if (db && Array.isArray(db.visits)) {
+                db.visits = db.visits.map((v) => guardVisitPhoto(v, db.id));
+            }
+            return origSaveDbSplit.call(this, db, options);
+        };
+        saveDbSplit.__loadingSafeVisitGuarded = true;
+    }
+
+    // 読み込み中の連打・早期保存を少し落ち着かせるための状態公開
+    window.__db88LoadingState = {
+        isLoading() {
+            return Boolean(isHydratingOrLoading);
+        }
+    };
+})();
+
+        
         bindEvents();
         initFirebaseRealtime();
     </script>
