@@ -5141,7 +5141,129 @@
         }
     };
 })();
+        
+(function installCoreVisitPhotoProtection() {
+    if (window.__db88CoreVisitPhotoProtectionInstalled) return;
+    window.__db88CoreVisitPhotoProtectionInstalled = true;
 
+    const storageKey = typeof STORAGE_KEY === 'string' && STORAGE_KEY
+        ? STORAGE_KEY
+        : 'my_ramen_db_multi_v2';
+
+    const photoMemoryCache = new Map(); // key: `${dbId}:${visitId}` -> photo文字列
+    let saveQueue = Promise.resolve();
+
+    function hasPhoto(val) {
+        return typeof val === 'string' && val.trim().length > 0;
+    }
+
+    function makeKey(dbId, visitId) {
+        return `${String(dbId ?? '')}:${String(visitId ?? '')}`;
+    }
+
+    function isExplicitClear(dbId, visitId) {
+        const exc = window.__db88GuardExceptions;
+        if (!exc || typeof exc.getState !== 'function') return false;
+        const st = exc.getState();
+        if (st?.jsonImportPriority) return true;
+        const key = `${String(dbId)}:${String(visitId)}:photo`;
+        return Array.isArray(st?.clearedPhotoKeys) && st.clearedPhotoKeys.includes(key);
+    }
+
+    function recordPhotosFromDb(db) {
+        if (!db || db.id == null || !Array.isArray(db.visits)) return;
+        for (const v of db.visits) {
+            if (v && v.id != null && hasPhoto(v.photo)) {
+                photoMemoryCache.set(makeKey(db.id, v.id), v.photo);
+            }
+        }
+    }
+
+    function findPhotoFromStorage(dbId, visitId) {
+        if (dbId == null || visitId == null) return '';
+        try {
+            const raw = localStorage.getItem(storageKey);
+            if (!raw) return '';
+            const parsed = JSON.parse(raw);
+            const cDb = (parsed?.databases || []).find((d) => String(d?.id) === String(dbId));
+            const cVisit = (cDb?.visits || []).find((v) => String(v?.id) === String(visitId));
+            return hasPhoto(cVisit?.photo) ? cVisit.photo : '';
+        } catch (_) {
+            return '';
+        }
+    }
+
+    function resolveSafeVisitPhoto(visit, dbId) {
+        if (!visit || typeof visit !== 'object' || visit.id == null) return visit;
+        const k = makeKey(dbId, visit.id);
+
+        if (hasPhoto(visit.photo)) {
+            photoMemoryCache.set(k, visit.photo);
+            return visit;
+        }
+
+        if (isExplicitClear(dbId, visit.id)) {
+            photoMemoryCache.delete(k);
+            return visit;
+        }
+
+        const memPhoto = photoMemoryCache.get(k);
+        if (hasPhoto(memPhoto)) {
+            return Object.assign({}, visit, { photo: memPhoto });
+        }
+
+        const storPhoto = findPhotoFromStorage(dbId, visit.id);
+        if (hasPhoto(storPhoto)) {
+            photoMemoryCache.set(k, storPhoto);
+            return Object.assign({}, visit, { photo: storPhoto });
+        }
+
+        return visit;
+    }
+
+    function protectDbVisits(db) {
+        if (!db || !Array.isArray(db.visits)) return db;
+        recordPhotosFromDb(db);
+        db.visits = db.visits.map((v) => resolveSafeVisitPhoto(v, db.id));
+        recordPhotosFromDb(db);
+        return db;
+    }
+
+    // 初期ロード時の既存写真を退避
+    if (typeof sys !== 'undefined' && Array.isArray(sys?.databases)) {
+        sys.databases.forEach(recordPhotosFromDb);
+    }
+
+    // 読み込み完了時にも写真を退避・補完
+    if (typeof hydrateDatabaseDetails === 'function' && !hydrateDatabaseDetails.__corePhotoProtected) {
+        const origHydrate = hydrateDatabaseDetails;
+        hydrateDatabaseDetails = async function protectedHydrateDatabaseDetails(...args) {
+            const res = await origHydrate.apply(this, args);
+            if (typeof sys !== 'undefined' && Array.isArray(sys?.databases)) {
+                sys.databases.forEach(protectDbVisits);
+            }
+            return res;
+        };
+        hydrateDatabaseDetails.__corePhotoProtected = true;
+    }
+
+    // 分割保存を直列化し、保存前後で訪問履歴の写真を保護
+    if (typeof saveDbSplit === 'function' && !saveDbSplit.__corePhotoProtected) {
+        const origSaveDbSplit = saveDbSplit;
+        saveDbSplit = function protectedSaveDbSplit(db, options = {}) {
+            protectDbVisits(db);
+            const run = async () => {
+                protectDbVisits(db);
+                const result = await origSaveDbSplit.call(this, db, options);
+                protectDbVisits(db);
+                return result;
+            };
+            saveQueue = saveQueue.then(run, run);
+            return saveQueue;
+        };
+        saveDbSplit.__corePhotoProtected = true;
+    }
+})();
         
         bindEvents();
         initFirebaseRealtime();
